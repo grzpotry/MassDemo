@@ -7,7 +7,11 @@
 		{
 			"Name": "MassDemo",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"MassSpawner",
+				"MassEntity"
+			]
 		}
 	],
 	"Plugins": [
