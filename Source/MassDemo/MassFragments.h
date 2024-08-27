@@ -43,14 +43,25 @@ public:
 };
 
 
+//tags
+
+// Identifies harvester - collecting resources
 USTRUCT()
 struct FMassAgentHarvesterTag : public FMassTag
 {
 	GENERATED_BODY()
 };
 
+
+// Identifies collectable resource mined by harvesters
 USTRUCT()
 struct FMassCollectableResourceTag : public FMassTag
+{
+	GENERATED_BODY()
+};
+
+USTRUCT()
+struct FMassTestTaskTag : public FMassTag
 {
 	GENERATED_BODY()
 };

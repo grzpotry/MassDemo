@@ -7,8 +7,12 @@ public class MassDemo : ModuleRules
 	public MassDemo(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
+
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "MassEntity", "MassAIBehavior", "MassCommon",
+			"StateTreeModule",
+		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "MassEntity", "MassCommon", "MassNavigation" });
 
