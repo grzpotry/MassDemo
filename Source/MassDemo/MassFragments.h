@@ -45,6 +45,24 @@ public:
 
 //tags
 
+UENUM()
+enum class EMassCustomTagAction : int8
+{
+	Check,
+	Add,
+	Remove,
+};
+
+UENUM()
+enum class EMassCustomTag : int8
+{
+	None = 0,
+	HarvesterStateIdle = 1,
+	HarvesterStateSearchingTarget = 2,
+	HarvesterStateMoving = 4,
+	HarvesterStateInteracting = 5,
+};
+
 // Identifies harvester - collecting resources
 USTRUCT()
 struct FMassAgentHarvesterTag : public FMassTag
@@ -61,8 +79,27 @@ struct FMassCollectableResourceTag : public FMassTag
 };
 
 USTRUCT()
-struct FMassTestTaskTag : public FMassTag
+struct FMassHarvesterStateIdleTag : public FMassTag
 {
 	GENERATED_BODY()
 };
+
+USTRUCT()
+struct FMassHarvesterStateSearchingTargetTag : public FMassTag
+{
+	GENERATED_BODY()
+};
+
+USTRUCT()
+struct FMassHarvesterStateMovingTag : public FMassTag
+{
+	GENERATED_BODY()
+};
+
+USTRUCT()
+struct FMassHarvesterStateInteractingTag : public FMassTag
+{
+	GENERATED_BODY()
+};
+
 

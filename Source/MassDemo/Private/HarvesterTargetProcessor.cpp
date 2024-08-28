@@ -21,7 +21,9 @@ void UHarvesterTargetProcessor::ConfigureQueries()
 {
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.AddRequirement<FHarvesterTargetFragment>(EMassFragmentAccess::ReadWrite);
+	
 	EntityQuery.AddTagRequirement<FMassAgentHarvesterTag>(EMassFragmentPresence::All);
+	EntityQuery.AddTagRequirement<FMassHarvesterStateSearchingTargetTag>(EMassFragmentPresence::All);
 	
 	EntityQuery.RegisterWithProcessor(*this);
 }
@@ -31,11 +33,11 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 	UE_LOG(LogTemp, Log, TEXT("Process harvesters"));
 	const FNavigationObstacleHashGrid2D& ObstacleGrid = NavigationSubsystem->GetObstacleGrid();
 	
-	EntityQuery.ForEachEntityChunk(EntityManager, Context, [this, &ObstacleGrid, &EntityManager](FMassExecutionContext& Context)
+	EntityQuery.ForEachEntityChunk(EntityManager, Context, [this, Context, &ObstacleGrid, &EntityManager](FMassExecutionContext& _Context)
 	{
-		const TConstArrayView<FTransformFragment> TransformList = Context.GetFragmentView<FTransformFragment>();
-		const TArrayView<FHarvesterTargetFragment> HarvesterTargetList = Context.GetMutableFragmentView<FHarvesterTargetFragment>();
-		const int32 NumEntities = Context.GetNumEntities();
+		const TConstArrayView<FTransformFragment> TransformList = _Context.GetFragmentView<FTransformFragment>();
+		const TArrayView<FHarvesterTargetFragment> HarvesterTargetList = _Context.GetMutableFragmentView<FHarvesterTargetFragment>();
+		const int32 NumEntities = _Context.GetNumEntities();
 		
 		for (int32 i = 0; i < NumEntities; ++i)
 		{
@@ -85,6 +87,9 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 		
 				const FTransformFragment& TargetTransform = EntityView.GetFragmentData<FTransformFragment>();
 				HarvesterTarget = TargetTransform.GetTransform().GetLocation();
+
+				const FMassEntityHandle Entity = _Context.GetEntity(i);
+				_Context.Defer().RemoveTag<FMassHarvesterStateSearchingTargetTag>(Entity);
 				UE_LOG(LogTemp, Log, TEXT("Setup new target"));
 			}
 		}
