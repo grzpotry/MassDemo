@@ -11,7 +11,7 @@ public class MassDemo : ModuleRules
 		PublicDependencyModuleNames.AddRange(new string[]
 		{
 			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "MassEntity", "MassAIBehavior", "MassCommon",
-			"StateTreeModule",
+			"StateTreeModule", "MassSignals"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "MassEntity", "MassCommon", "MassNavigation" });

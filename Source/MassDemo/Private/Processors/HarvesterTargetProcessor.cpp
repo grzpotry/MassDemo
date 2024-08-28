@@ -2,19 +2,20 @@
 
 
 //#include "HarvesterTargetProcessor.h"
-#include "MassDemo/HarvesterTargetProcessor.h"
-
+#include "Processors/HarvesterTargetProcessor.h"
 #include "MassCommonFragments.h"
 #include "MassCommonTypes.h"
 #include "MassEntityView.h"
 #include "MassExecutionContext.h"
 #include "MassNavigationSubsystem.h"
+#include "Algo/RandomShuffle.h"
 #include "MassDemo/MassFragments.h"
 
 UHarvesterTargetProcessor::UHarvesterTargetProcessor() : EntityQuery(*this)
 {
+	bAutoRegisterWithProcessingPhases = true;
 	ExecutionFlags = (int32)(EProcessorExecutionFlags::All);
-	ExecutionOrder.ExecuteInGroup = UE::Mass::ProcessorGroupNames::Tasks;
+	ExecutionOrder.ExecuteBefore.Add(UE::Mass::ProcessorGroupNames::Tasks);
 }
 
 void UHarvesterTargetProcessor::ConfigureQueries()
@@ -30,7 +31,6 @@ void UHarvesterTargetProcessor::ConfigureQueries()
 
 void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
-	UE_LOG(LogTemp, Log, TEXT("Process harvesters"));
 	const FNavigationObstacleHashGrid2D& ObstacleGrid = NavigationSubsystem->GetObstacleGrid();
 	
 	EntityQuery.ForEachEntityChunk(EntityManager, Context, [this, Context, &ObstacleGrid, &EntityManager](FMassExecutionContext& _Context)
@@ -38,12 +38,17 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 		const TConstArrayView<FTransformFragment> TransformList = _Context.GetFragmentView<FTransformFragment>();
 		const TArrayView<FHarvesterTargetFragment> HarvesterTargetList = _Context.GetMutableFragmentView<FHarvesterTargetFragment>();
 		const int32 NumEntities = _Context.GetNumEntities();
-		
-		for (int32 i = 0; i < NumEntities; ++i)
+
+		if (NumEntities > 0)
 		{
-			const FTransformFragment& TransformFragment = TransformList[i];
+			UE_LOG(LogTemp, Log, TEXT("Calculate target harvesters %i"), NumEntities);
+		}
+		
+		for (int32 EntityIndex = 0; EntityIndex < NumEntities; ++EntityIndex)
+		{
+			const FTransformFragment& TransformFragment = TransformList[EntityIndex];
 			const FTransform& Transform = TransformFragment.GetTransform();
-			FVector& HarvesterTarget = HarvesterTargetList[i].WorldPosition;
+			FVector& HarvesterTarget = HarvesterTargetList[EntityIndex].WorldPosition;
 		
 			auto Distance = HarvesterTarget - Transform.GetLocation();
 		
@@ -69,40 +74,49 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 				UE_LOG(LogTemp, Log, TEXT("Can't find any resource"));
 				continue;
 			}
-		
-			for (const FNavigationObstacleHashGrid2D::ItemIDType NearbyEntity : NearbyEntities)
+
+			//pick random
+			Algo::RandomShuffle(NearbyEntities);
+
+			for (int i = NearbyEntities.Num() - 1; i >= 0; i--)
 			{
 				// This can happen if we remove entities in the system.
-				if (!EntityManager.IsEntityValid(NearbyEntity.Entity))
+				if (!EntityManager.IsEntityValid(NearbyEntities[i].Entity))
 				{
-					continue;
+					NearbyEntities.RemoveAt(i);
 				}
-		
+
 				//TODO: Except filtering by tag, create separate grid containing only resources !
-				FMassEntityView EntityView(EntityManager, NearbyEntity.Entity);
+				FMassEntityView EntityView(EntityManager, NearbyEntities[i].Entity);
 				if (!EntityView.HasTag<FMassCollectableResourceTag>())
 				{
-					continue;
+					NearbyEntities.RemoveAt(i);
 				}
-		
-				const FTransformFragment& TargetTransform = EntityView.GetFragmentData<FTransformFragment>();
-				HarvesterTarget = TargetTransform.GetTransform().GetLocation();
-
-				const FMassEntityHandle Entity = _Context.GetEntity(i);
-				_Context.Defer().RemoveTag<FMassHarvesterStateSearchingTargetTag>(Entity);
-				UE_LOG(LogTemp, Log, TEXT("Setup new target"));
 			}
+
+			if (NearbyEntities.IsEmpty())
+			{
+				UE_LOG(LogTemp, Log, TEXT("Can't find any resource"));
+				continue;
+			}
+
+			const FMassNavigationObstacleItem NearbyEntity = NearbyEntities[0];
+			FMassEntityView EntityView(EntityManager, NearbyEntity.Entity);
+
+			const FTransformFragment& TargetTransform = EntityView.GetFragmentData<FTransformFragment>();
+			HarvesterTarget = TargetTransform.GetTransform().GetLocation();
+
+			const FMassEntityHandle Entity = _Context.GetEntity(EntityIndex);
+			_Context.Defer().RemoveTag<FMassHarvesterStateSearchingTargetTag>(Entity);
+			UE_LOG(LogTemp, Log, TEXT("Setup new target"));
 		}
 	});
-	
-	//Super::Execute(EntityManager, Context);
 }
 
 void UHarvesterTargetProcessor::Initialize(UObject& Owner)
 {
-	UE_LOG(LogTemp, Log, TEXT("Initialize"));
 	Super::Initialize(Owner);
-	
+
 	NavigationSubsystem = UWorld::GetSubsystem<UMassNavigationSubsystem>(Owner.GetWorld());
 }
 

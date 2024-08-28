@@ -1,12 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "SimpleMovementRandomProcessor.h"
-
+#include "Processors/SimpleMovementRandomProcessor.h"
 #include "MassCommonFragments.h"
 #include "MassCommonTypes.h"
 #include "MassExecutionContext.h"
-#include "MassFragments.h"
+#include "MassDemo/MassFragments.h"
 
 USimpleMovementRandomProcessor::USimpleMovementRandomProcessor()
 {

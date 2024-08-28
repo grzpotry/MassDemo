@@ -1,21 +1,48 @@
 ﻿
 #include "..\..\Public\Tasks\MassUpdateTagTask.h"
 #include "MassCommandBuffer.h"
+#include "MassEntityView.h"
 #include "MassExecutionContext.h"
+#include "MassSignalSubsystem.h"
 #include "MassStateTreeExecutionContext.h"
 #include "StateTreeLinker.h"
 #include "MassDemo/MassFragments.h"
 
+FMassUpdateTagTask::FMassUpdateTagTask()
+{
+	bShouldCallTick = true;
+	bShouldAffectTransitions = true;
+}
+
 bool FMassUpdateTagTask::Link(FStateTreeLinker& Linker)
 {
+	Linker.LinkExternalData(MassSignalSubsystemHandle);
 	return true;
 }
 
 EStateTreeRunStatus FMassUpdateTagTask::EnterState(FStateTreeExecutionContext& Context,
                                                    const FStateTreeTransitionResult& Transition) const
 {
-	UE_LOG(LogTemp, Log, TEXT("Entered state %s"), *Context.GetActiveStateName());
+	UE_LOG(LogTemp, Log, TEXT("Enteredstate %s"), *Context.GetActiveStateName());
 	ProcessEntityTag(Context, EMassCustomTagAction::Add);
+	
+	const FMassStateTreeExecutionContext& MassContext = static_cast<FMassStateTreeExecutionContext&>(Context);
+	UMassSignalSubsystem& MassSignalSubsystem = MassContext.GetExternalData(MassSignalSubsystemHandle);
+	FMassExecutionContext& MassExecutionContext = MassContext.GetEntitySubsystemExecutionContext();
+
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	InstanceData.Time = 0;
+
+	//call 'tick' - TODO: remove it when all processors will tick on entities
+	MassSignalSubsystem.DelaySignalEntityDeferred(MassExecutionContext, UE::Mass::Signals::StateTreeActivate, MassContext.GetEntity(), 0.1f);
+	
+	// A Duration <= 0 indicates that the task runs until a transition in the state tree stops it.
+	// Otherwise we schedule a signal to end the task.
+	if (InstanceData.Duration > 0.0f)
+	{
+		MassSignalSubsystem.DelaySignalEntity(UE::Mass::Signals::StateTreeActivate, MassContext.GetEntity(), InstanceData.Duration);
+	}
+	
 	return EStateTreeRunStatus::Running;
 }
 
@@ -24,12 +51,24 @@ void FMassUpdateTagTask::ExitState(FStateTreeExecutionContext& Context,
                                    const FStateTreeTransitionResult& Transition) const
 {
 	UE_LOG(LogTemp, Log, TEXT("Exited state %s"), *Context.GetActiveStateName());
-	//ProcessEntityTag(Context, EMassCustomTagAction::Remove);
+	ProcessEntityTag(Context, EMassCustomTagAction::Remove);
 }
 
 EStateTreeRunStatus FMassUpdateTagTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
 	const bool bIsTagPresent = ProcessEntityTag(Context, EMassCustomTagAction::Check);
+
+	int tagIndex = static_cast<int>(Context.GetInstanceData(*this).Tag);
+	UE_LOG(LogTemp, Log, TEXT("Ticking state IsRunning: %i tagIndex: %i"), bIsTagPresent, tagIndex);
+	
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	InstanceData.Time += DeltaTime;
+
+	if (InstanceData.Duration > 0.0f)
+	{
+		return InstanceData.Time < InstanceData.Duration ? EStateTreeRunStatus::Running : EStateTreeRunStatus::Succeeded;
+	}
+	
 	return bIsTagPresent ? EStateTreeRunStatus::Running : EStateTreeRunStatus::Succeeded;
 }
 
@@ -73,13 +112,15 @@ bool FMassUpdateTagTask::ProcessEntityTag(const EMassCustomTag Tag, FMassExecuti
 
 template <typename T>
 bool FMassUpdateTagTask::ProcessEntityTag(FMassEntityHandle EntityHandle, FMassExecutionContext& Context,
-                                         EMassCustomTagAction TagAction)
+                                          EMassCustomTagAction TagAction)
 {
 	switch (TagAction)
 	{
-		case EMassCustomTagAction::Check:
+	case EMassCustomTagAction::Check:
+		{
 			return Context.DoesArchetypeHaveTag<T>();
-		case EMassCustomTagAction::Add:
+		}
+	case EMassCustomTagAction::Add:
 			//if (!Context.DoesArchetypeHaveTag<T>())
 			{
 				Context.Defer().AddTag<T>(EntityHandle);

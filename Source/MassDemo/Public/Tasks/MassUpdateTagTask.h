@@ -16,6 +16,16 @@ struct MASSDEMO_API FMassAddTagForDurationTaskInstanceData
 	
 	UPROPERTY(EditAnywhere, Category = Parameter)
 	EMassCustomTag Tag = EMassCustomTag::None;
+
+	/** Delay before the task ends. Default (0 or any negative) will run as long as tag is present - requires a transition in the state tree to stop it.
+	 * With positive duration, tag will be removed automatically when time passed.
+	 */
+	UPROPERTY(EditAnywhere, Category = Parameter)
+	float Duration = 0.f;
+
+	/** Accumulated time used to stop task if duration is set */
+	UPROPERTY()
+	float Time = 0.f;
 };
 
 
@@ -33,6 +43,8 @@ public:
 	static bool ProcessEntityTag(const EMassCustomTag Tag, FMassExecutionContext& MassExecutionContext,
 	                             const FMassEntityHandle EntityHandle, EMassCustomTagAction TagAction);
 
+	FMassUpdateTagTask();
+
 protected:
 	virtual bool Link(FStateTreeLinker& Linker) override;
 	bool ProcessEntityTag(FStateTreeExecutionContext& Context, EMassCustomTagAction TagAction) const;
@@ -43,6 +55,8 @@ protected:
 
 	template <typename T>
 	static bool ProcessEntityTag(FMassEntityHandle EntityHandle, FMassExecutionContext& Context,
-	                            EMassCustomTagAction TagAction);
+	                             EMassCustomTagAction TagAction);
+
+		TStateTreeExternalDataHandle<UMassSignalSubsystem> MassSignalSubsystemHandle;
 };
 
