@@ -22,7 +22,7 @@ bool FMassUpdateTagTask::Link(FStateTreeLinker& Linker)
 EStateTreeRunStatus FMassUpdateTagTask::EnterState(FStateTreeExecutionContext& Context,
                                                    const FStateTreeTransitionResult& Transition) const
 {
-	//UE_LOG(LogTemp, Log, TEXT("Entered state %s"), *Context.GetActiveStateName());
+	UE_LOG(LogTemp, Log, TEXT("Entered state %s"), *Context.GetActiveStateName());
 	ProcessEntityTag(Context, EMassCustomTagAction::Add);
 	
 	const FMassStateTreeExecutionContext& MassContext = static_cast<FMassStateTreeExecutionContext&>(Context);
@@ -96,6 +96,8 @@ bool FMassUpdateTagTask::ProcessEntityTag(const EMassCustomTag Tag, FMassExecuti
 			return ProcessEntityTag<FMassHarvesterStateInteractingTag>(EntityHandle, MassExecutionContext, TagAction);
 		case EMassCustomTag::HarvesterStateSearchingTarget:
 			return ProcessEntityTag<FMassHarvesterStateSearchingTargetTag>(EntityHandle, MassExecutionContext, TagAction);
+		case EMassCustomTag::HarvesterStateMiningResource:
+			return ProcessEntityTag<FMassHarvesterStateMiningResourceTag>(EntityHandle, MassExecutionContext, TagAction);
 	default:
 			checkf(false, TEXT("Custom mass tag not supported"));
 			return false;

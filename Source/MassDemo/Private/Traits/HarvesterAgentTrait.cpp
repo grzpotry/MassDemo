@@ -7,7 +7,7 @@
 
 void UHarvesterAgentTrait::BuildTemplate(FMassEntityTemplateBuildContext& BuildContext, const UWorld& World) const
 {
-	BuildContext.AddFragment<FHarvesterTargetFragment>();
+	BuildContext.AddFragment<FHarvesterFragment>();
 	BuildContext.AddTag<FMassAgentHarvesterTag>();
 	
 	FMassEntityManager& EntityManager = UE::Mass::Utils::GetEntityManagerChecked(World);

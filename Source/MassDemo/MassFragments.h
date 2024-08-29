@@ -28,18 +28,26 @@ public:
 	TSoftObjectPtr<UResourceTemplate> Template;
 	
 	FVector WorldPosition;
-	float CurrentAmount;
-	float MaxAmount;
+
+	UPROPERTY(EditAnywhere, Category = "")
+	float CurrentAmount = 5;
 };
 
 
 USTRUCT()
-struct FHarvesterTargetFragment : public FMassFragment
+struct FHarvesterFragment : public FMassFragment
 {
 	GENERATED_BODY()
 
 public:
-	FVector WorldPosition;
+	UPROPERTY(EditAnywhere)
+	float CurrentResources; //for now, just single type of resource
+
+	UPROPERTY(EditAnywhere)
+	float LastMiningTime;
+	
+	FVector MoveTargetPosition;
+	FMassEntityHandle MoveTargetEntityHandle;
 };
 
 
@@ -50,6 +58,12 @@ struct FHarvesterConfigSharedFragment : public FMassSharedFragment
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = "0.0"))
+	float ResourcesStorageCapacity = 20.0f;
+	
+	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = "0.0"))
+	float MiningSpeed = 1.0f;
+	
 	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = "0.0"))
 	float MoveSpeed = 200.0f;
 
@@ -77,6 +91,7 @@ enum class EMassCustomTag : int8
 	HarvesterStateSearchingTarget = 2,
 	HarvesterStateMoving = 4,
 	HarvesterStateInteracting = 5,
+	HarvesterStateMiningResource = 6,
 };
 
 // Identifies harvester - agent collecting resources
@@ -111,6 +126,13 @@ struct FMassHarvesterStateMovingTag : public FMassTag
 // harvester StateTree state: Interacting
 USTRUCT()
 struct FMassHarvesterStateInteractingTag : public FMassTag
+{
+	GENERATED_BODY()
+};
+
+// harvester StateTree state: Interacting
+USTRUCT()
+struct FMassHarvesterStateMiningResourceTag : public FMassTag
 {
 	GENERATED_BODY()
 };

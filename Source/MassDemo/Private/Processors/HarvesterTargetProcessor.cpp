@@ -26,7 +26,7 @@ void UHarvesterTargetProcessor::ConfigureQueries()
 	ProcessorRequirements.AddSubsystemRequirement<UMassNavigationSubsystem>(EMassFragmentAccess::ReadWrite);
 	
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite);
-	EntityQuery.AddRequirement<FHarvesterTargetFragment>(EMassFragmentAccess::ReadWrite);
+	EntityQuery.AddRequirement<FHarvesterFragment>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.AddConstSharedRequirement<FHarvesterConfigSharedFragment>(EMassFragmentPresence::All);
 	
 	EntityQuery.AddTagRequirement<FMassAgentHarvesterTag>(EMassFragmentPresence::All);
@@ -48,7 +48,7 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 	EntityQuery.ForEachEntityChunk(EntityManager, Context, [this, &ObstacleGrid, &EntityManager, &EntitiesToSignal](FMassExecutionContext& _Context)
 	{
 		const TConstArrayView<FTransformFragment> TransformList = _Context.GetFragmentView<FTransformFragment>();
-		const TArrayView<FHarvesterTargetFragment> HarvesterTargetList = _Context.GetMutableFragmentView<FHarvesterTargetFragment>();
+		const TArrayView<FHarvesterFragment> HarvesterTargetList = _Context.GetMutableFragmentView<FHarvesterFragment>();
 		const int32 NumEntities = _Context.GetNumEntities();
 		const FHarvesterConfigSharedFragment& HarvesterConfigSharedFragment = _Context.GetConstSharedFragment<FHarvesterConfigSharedFragment>();
 		const float StopDistanceSqr = HarvesterConfigSharedFragment.TargetStopDistance * HarvesterConfigSharedFragment.TargetStopDistance;;
@@ -59,13 +59,14 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 			
 			const FTransformFragment& TransformFragment = TransformList[EntityIndex];
 			const FTransform& Transform = TransformFragment.GetTransform();
-			FVector& HarvesterTarget = HarvesterTargetList[EntityIndex].WorldPosition;
+			FVector& HarvesterMoveTargetPosition = HarvesterTargetList[EntityIndex].MoveTargetPosition;
+			FMassEntityHandle& HarvesterMoveTargetEntity = HarvesterTargetList[EntityIndex].MoveTargetEntityHandle;
 
 			FVector EntityLocation = Transform.GetLocation();
-			FVector Distance = HarvesterTarget - EntityLocation;
+			FVector Distance = HarvesterMoveTargetPosition - EntityLocation;
 			
 			//we already have some target, and haven't reach it yet
-			if (!HarvesterTarget.IsZero() && Distance.SizeSquared() > StopDistanceSqr)
+			if (!HarvesterMoveTargetPosition.IsZero() && Distance.SizeSquared() > StopDistanceSqr)
 			{
 				continue;
 			}
@@ -109,11 +110,13 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 				continue;
 			}
 
-			const FMassNavigationObstacleItem NearbyEntity = NearbyEntities[0];
-			FMassEntityView EntityView(EntityManager, NearbyEntity.Entity);
+			const FMassNavigationObstacleItem TargetEntity = NearbyEntities[0];
+			const FMassEntityHandle TargetEntityHandle = TargetEntity.Entity;
+			FMassEntityView TargetEntityView(EntityManager, TargetEntityHandle);
 
-			const FTransformFragment& TargetTransform = EntityView.GetFragmentData<FTransformFragment>();
-			HarvesterTarget = TargetTransform.GetTransform().GetLocation();
+			const FTransformFragment& TargetTransform = TargetEntityView.GetFragmentData<FTransformFragment>();
+			HarvesterMoveTargetPosition = TargetTransform.GetTransform().GetLocation();
+			HarvesterMoveTargetEntity = TargetEntityHandle;
 
 			const FMassEntityHandle Entity = _Context.GetEntity(EntityIndex);
 			_Context.Defer().RemoveTag<FMassHarvesterStateSearchingTargetTag>(Entity);

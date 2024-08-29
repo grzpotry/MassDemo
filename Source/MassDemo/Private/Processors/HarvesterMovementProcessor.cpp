@@ -22,7 +22,7 @@ void UHarvesterMovementProcessor::ConfigureQueries()
 	ProcessorRequirements.AddSubsystemRequirement<UMassSignalSubsystem>(EMassFragmentAccess::ReadWrite);
 	
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite);
-	EntityQuery.AddRequirement<FHarvesterTargetFragment>(EMassFragmentAccess::ReadWrite);
+	EntityQuery.AddRequirement<FHarvesterFragment>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.AddConstSharedRequirement<FHarvesterConfigSharedFragment>(EMassFragmentPresence::All);
 	EntityQuery.AddTagRequirement<FMassAgentHarvesterTag>(EMassFragmentPresence::All);
 	EntityQuery.AddTagRequirement<FMassHarvesterStateMovingTag>(EMassFragmentPresence::All);
@@ -42,7 +42,7 @@ void UHarvesterMovementProcessor::Execute(FMassEntityManager& EntityManager, FMa
 		const float MoveSpeed = HarvesterConfigSharedFragment.MoveSpeed;
 
 		const TArrayView<FTransformFragment> TransformsList = _Context.GetMutableFragmentView<FTransformFragment>();
-		const TArrayView<FHarvesterTargetFragment> TargetsList = _Context.GetMutableFragmentView<FHarvesterTargetFragment>();
+		const TArrayView<FHarvesterFragment> HarvestersList = _Context.GetMutableFragmentView<FHarvesterFragment>();
 		const float WorldDeltaTime = _Context.GetDeltaTimeSeconds();
 		const auto EntitiesView  = _Context.GetEntities();
 		const int32 NumEntities = _Context.GetNumEntities();
@@ -52,18 +52,20 @@ void UHarvesterMovementProcessor::Execute(FMassEntityManager& EntityManager, FMa
 		for (int32 EntityIndex = 0; EntityIndex < NumEntities; ++EntityIndex)
 		{
 			FTransform& Transform = TransformsList[EntityIndex].GetMutableTransform();
-			FVector& MoveTarget = TargetsList[EntityIndex].WorldPosition;
+			FVector& MoveTargetPosition = HarvestersList[EntityIndex].MoveTargetPosition;
+			FMassEntityHandle& MoveTargetEntity = HarvestersList[EntityIndex].MoveTargetEntityHandle;
 
 			FVector CurrentLocation = Transform.GetLocation();
-			FVector TargetVector = MoveTarget - CurrentLocation;
-			
-			if (!MoveTarget.IsZero() && TargetVector.SizeSquared() > StopDistanceSqr)
+			FVector TargetVector = MoveTargetPosition - CurrentLocation;
+
+			// TODO: handle case in stateTree when entity is removed while harvester is reaching it, validate entity through EntityManager ?
+			if ((!MoveTargetPosition.IsZero() && TargetVector.SizeSquared() > StopDistanceSqr) && MoveTargetEntity.IsValid())
 			{
 				Transform.SetLocation(CurrentLocation + TargetVector.GetSafeNormal() * MoveSpeed * WorldDeltaTime);
 			}
 			else
 			{
-				//TODO: Except filtering by tag, create separate grid containing only resources !
+				// target is reached
 				if (EntityIndex < EntitiesView.Num())
 				{
 					FMassEntityHandle Entity = EntitiesView[EntityIndex];
@@ -72,7 +74,10 @@ void UHarvesterMovementProcessor::Execute(FMassEntityManager& EntityManager, FMa
 					{
 						//UE_LOG(LogTemp, Log, TEXT("Move harvester complete"));
 						_Context.Defer().RemoveTag<FMassHarvesterStateMovingTag>(Entity);
-						MoveTarget = FVector::ZeroVector; //clear target on reach, so it won't be relevant anymore
+
+						//clear target on reach, so it won't be relevant anymore
+						MoveTargetPosition = FVector::ZeroVector; 
+						
 						EntitiesToSignal.Add(Entity);
 					}
 					else
