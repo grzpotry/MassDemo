@@ -22,7 +22,7 @@ bool FMassUpdateTagTask::Link(FStateTreeLinker& Linker)
 EStateTreeRunStatus FMassUpdateTagTask::EnterState(FStateTreeExecutionContext& Context,
                                                    const FStateTreeTransitionResult& Transition) const
 {
-	UE_LOG(LogTemp, Log, TEXT("Entered state %s"), *Context.GetActiveStateName());
+	//UE_LOG(LogTemp, Log, TEXT("Entered state %s"), *Context.GetActiveStateName());
 	ProcessEntityTag(Context, EMassCustomTagAction::Add);
 	
 	const FMassStateTreeExecutionContext& MassContext = static_cast<FMassStateTreeExecutionContext&>(Context);
@@ -53,7 +53,7 @@ EStateTreeRunStatus FMassUpdateTagTask::Tick(FStateTreeExecutionContext& Context
 	const bool bIsTagPresent = ProcessEntityTag(Context, EMassCustomTagAction::Check);
 
 	int tagIndex = static_cast<int>(Context.GetInstanceData(*this).Tag);
-	UE_LOG(LogTemp, Log, TEXT("Ticking state IsRunning: %i tagIndex: %i"), bIsTagPresent, tagIndex);
+	//UE_LOG(LogTemp, Log, TEXT("Ticking state IsRunning: %i tagIndex: %i"), bIsTagPresent, tagIndex);
 	
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	InstanceData.Time += DeltaTime;

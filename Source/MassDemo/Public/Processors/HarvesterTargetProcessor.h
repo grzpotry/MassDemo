@@ -29,6 +29,4 @@ private:
 	/** Size of the query to find targets */
 	UPROPERTY(EditDefaultsOnly, Category = Query, config, meta = (UIMin = 0.0, ClampMin = 0.0))
 	float QueryExtent = 0.f;
-
-	TObjectPtr<UMassNavigationSubsystem> NavigationSubsystem;
 };

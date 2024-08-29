@@ -70,7 +70,7 @@ void UHarvesterMovementProcessor::Execute(FMassEntityManager& EntityManager, FMa
 
 					if (Entity.IsValid())
 					{
-						UE_LOG(LogTemp, Log, TEXT("Move harvester complete"));
+						//UE_LOG(LogTemp, Log, TEXT("Move harvester complete"));
 						_Context.Defer().RemoveTag<FMassHarvesterStateMovingTag>(Entity);
 						MoveTarget = FVector::ZeroVector; //clear target on reach, so it won't be relevant anymore
 						EntitiesToSignal.Add(Entity);
@@ -90,7 +90,7 @@ void UHarvesterMovementProcessor::Execute(FMassEntityManager& EntityManager, FMa
 	{
 		//Tick state trees
 		SignalSubsystem.SignalEntitiesDeferred(Context, UE::Mass::Signals::NewStateTreeTaskRequired, EntitiesToSignal);
-		UE_LOG(LogTemp, Log, TEXT("Movement completedd for %i entities"), EntitiesToSignal.Num());
+		//UE_LOG(LogTemp, Log, TEXT("Movement completed for %i entities"), EntitiesToSignal.Num());
 	}
 	
 }

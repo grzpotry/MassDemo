@@ -23,6 +23,7 @@ UHarvesterTargetProcessor::UHarvesterTargetProcessor() : EntityQuery(*this)
 void UHarvesterTargetProcessor::ConfigureQueries()
 {
 	ProcessorRequirements.AddSubsystemRequirement<UMassSignalSubsystem>(EMassFragmentAccess::ReadWrite);
+	ProcessorRequirements.AddSubsystemRequirement<UMassNavigationSubsystem>(EMassFragmentAccess::ReadWrite);
 	
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.AddRequirement<FHarvesterTargetFragment>(EMassFragmentAccess::ReadWrite);
@@ -37,8 +38,12 @@ void UHarvesterTargetProcessor::ConfigureQueries()
 void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
 	UMassSignalSubsystem& SignalSubsystem = Context.GetMutableSubsystemChecked<UMassSignalSubsystem>();
+	const UMassNavigationSubsystem& NavigationSubsystem = Context.GetMutableSubsystemChecked<UMassNavigationSubsystem>();
+	
 	TArray<FMassEntityHandle> EntitiesToSignal;
-	const FNavigationObstacleHashGrid2D& ObstacleGrid = NavigationSubsystem->GetObstacleGrid();
+
+	//TODO: potential cache miss - cache part of obstacle grid
+	const FNavigationObstacleHashGrid2D& ObstacleGrid = NavigationSubsystem.GetObstacleGrid();
 	
 	EntityQuery.ForEachEntityChunk(EntityManager, Context, [this, &ObstacleGrid, &EntityManager, &EntitiesToSignal](FMassExecutionContext& _Context)
 	{
@@ -65,7 +70,7 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 				continue;
 			}
 		
-			//search new target for harvester
+			//search new target for harvester (quite heavy) TODO: optimize
 			const FVector Extent(QueryExtent, QueryExtent, QueryExtent);
 			const FBox QueryBox = FBox::BuildAABB(EntityLocation, Extent);
 			
@@ -122,20 +127,20 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 	{
 		//Tick state trees
 		SignalSubsystem.SignalEntitiesDeferred(Context, UE::Mass::Signals::NewStateTreeTaskRequired, EntitiesToSignal);
-		UE_LOG(LogTemp, Log, TEXT("Setup new target for %i entities"), EntitiesToSignal.Num());
+		//UE_LOG(LogTemp, Log, TEXT("Setup new target for %i entities"), EntitiesToSignal.Num());
 	}
 }
 
 void UHarvesterTargetProcessor::OnResourceSearchFailed(const FVector& QueryOrigin, const FVector& Extent) const
 {
 	DrawDebugBox(GetWorld(), QueryOrigin, Extent, FColor::Yellow, true, 10);
-	UE_LOG(LogTemp, Log, TEXT("Can't find any resource1234"));
+	//UE_LOG(LogTemp, Log, TEXT("Can't find any resource1234"));
 }
 
 void UHarvesterTargetProcessor::Initialize(UObject& Owner)
 {
 	Super::Initialize(Owner);
 
-	NavigationSubsystem = UWorld::GetSubsystem<UMassNavigationSubsystem>(Owner.GetWorld());
+	//NavigationSubsystem = UWorld::GetSubsystem<UMassNavigationSubsystem>(Owner.GetWorld());
 }
 
