@@ -9,4 +9,9 @@ void UHarvesterAgentTrait::BuildTemplate(FMassEntityTemplateBuildContext& BuildC
 {
 	BuildContext.AddFragment<FHarvesterTargetFragment>();
 	BuildContext.AddTag<FMassAgentHarvesterTag>();
+	
+	FMassEntityManager& EntityManager = UE::Mass::Utils::GetEntityManagerChecked(World);
+
+	const FConstSharedStruct ConfigFragment = EntityManager.GetOrCreateConstSharedFragment(HarvesterConfig);
+	BuildContext.AddConstSharedFragment(ConfigFragment);
 }

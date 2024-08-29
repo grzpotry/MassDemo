@@ -20,6 +20,7 @@ public:
 	
 	virtual void ConfigureQueries() override;
 	virtual auto Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) -> void override;
+	void OnResourceSearchFailed(const FVector& QueryOrigin, const FVector& Extent) const;
 	virtual void Initialize(UObject& Owner) override;
 
 private:

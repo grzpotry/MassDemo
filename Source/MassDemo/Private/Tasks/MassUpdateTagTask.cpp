@@ -1,7 +1,6 @@
 ﻿
 #include "..\..\Public\Tasks\MassUpdateTagTask.h"
 #include "MassCommandBuffer.h"
-#include "MassEntityView.h"
 #include "MassExecutionContext.h"
 #include "MassSignalSubsystem.h"
 #include "MassStateTreeExecutionContext.h"
@@ -23,18 +22,14 @@ bool FMassUpdateTagTask::Link(FStateTreeLinker& Linker)
 EStateTreeRunStatus FMassUpdateTagTask::EnterState(FStateTreeExecutionContext& Context,
                                                    const FStateTreeTransitionResult& Transition) const
 {
-	UE_LOG(LogTemp, Log, TEXT("Enteredstate %s"), *Context.GetActiveStateName());
+	UE_LOG(LogTemp, Log, TEXT("Entered state %s"), *Context.GetActiveStateName());
 	ProcessEntityTag(Context, EMassCustomTagAction::Add);
 	
 	const FMassStateTreeExecutionContext& MassContext = static_cast<FMassStateTreeExecutionContext&>(Context);
 	UMassSignalSubsystem& MassSignalSubsystem = MassContext.GetExternalData(MassSignalSubsystemHandle);
-	FMassExecutionContext& MassExecutionContext = MassContext.GetEntitySubsystemExecutionContext();
 
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	InstanceData.Time = 0;
-
-	//call 'tick' - TODO: remove it when all processors will tick on entities
-	MassSignalSubsystem.DelaySignalEntityDeferred(MassExecutionContext, UE::Mass::Signals::StateTreeActivate, MassContext.GetEntity(), 0.1f);
 	
 	// A Duration <= 0 indicates that the task runs until a transition in the state tree stops it.
 	// Otherwise we schedule a signal to end the task.
@@ -50,7 +45,6 @@ EStateTreeRunStatus FMassUpdateTagTask::EnterState(FStateTreeExecutionContext& C
 void FMassUpdateTagTask::ExitState(FStateTreeExecutionContext& Context,
                                    const FStateTreeTransitionResult& Transition) const
 {
-	UE_LOG(LogTemp, Log, TEXT("Exited state %s"), *Context.GetActiveStateName());
 	ProcessEntityTag(Context, EMassCustomTagAction::Remove);
 }
 
@@ -96,8 +90,6 @@ bool FMassUpdateTagTask::ProcessEntityTag(const EMassCustomTag Tag, FMassExecuti
 	{
 		case EMassCustomTag::None:
 			return false;
-		case EMassCustomTag::HarvesterStateIdle:
-			return ProcessEntityTag<FMassHarvesterStateIdleTag>(EntityHandle, MassExecutionContext, TagAction);
 		case EMassCustomTag::HarvesterStateMoving:
 			return ProcessEntityTag<FMassHarvesterStateMovingTag>(EntityHandle, MassExecutionContext, TagAction);
 		case EMassCustomTag::HarvesterStateInteracting:
@@ -116,24 +108,15 @@ bool FMassUpdateTagTask::ProcessEntityTag(FMassEntityHandle EntityHandle, FMassE
 {
 	switch (TagAction)
 	{
-	case EMassCustomTagAction::Check:
-		{
+		case EMassCustomTagAction::Check:
 			return Context.DoesArchetypeHaveTag<T>();
-		}
-	case EMassCustomTagAction::Add:
-			//if (!Context.DoesArchetypeHaveTag<T>())
-			{
-				Context.Defer().AddTag<T>(EntityHandle);
-				UE_LOG(LogTemp, Log, TEXT("Added tag"));
-			}
-			return true;
-		case EMassCustomTagAction::Remove:
-			//if (Context.DoesArchetypeHaveTag<T>())
-			{
+		case EMassCustomTagAction::Add:
+			Context.Defer().AddTag<T>(EntityHandle);
+				return true;
+			case EMassCustomTagAction::Remove:
 				Context.Defer().RemoveTag<T>(EntityHandle);
-			}
+				return false;
+		default:
 			return false;
-	default:
-		return false;
 	}
 }

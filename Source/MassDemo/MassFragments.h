@@ -43,27 +43,43 @@ public:
 };
 
 
+// configuration for all harvesters
+USTRUCT()
+struct FHarvesterConfigSharedFragment : public FMassSharedFragment
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = "0.0"))
+	float MoveSpeed = 200.0f;
+
+	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = "0.0"))
+	float TargetStopDistance = 10.0f;
+};
+
+
 //tags
 
+// Describes method executed on custom Mass tag
 UENUM()
 enum class EMassCustomTagAction : int8
 {
-	Check,
-	Add,
-	Remove,
+	Check = 0,
+	Add = 1,
+	Remove = 2,
 };
 
+// Custom tags used by StateTree tasks - quick solution for referencing MassTags in stateTree editor
 UENUM()
 enum class EMassCustomTag : int8
 {
 	None = 0,
-	HarvesterStateIdle = 1,
 	HarvesterStateSearchingTarget = 2,
 	HarvesterStateMoving = 4,
 	HarvesterStateInteracting = 5,
 };
 
-// Identifies harvester - collecting resources
+// Identifies harvester - agent collecting resources
 USTRUCT()
 struct FMassAgentHarvesterTag : public FMassTag
 {
@@ -78,24 +94,21 @@ struct FMassCollectableResourceTag : public FMassTag
 	GENERATED_BODY()
 };
 
-USTRUCT()
-struct FMassHarvesterStateIdleTag : public FMassTag
-{
-	GENERATED_BODY()
-};
-
+// harvester StateTree state: SearchingTarget
 USTRUCT()
 struct FMassHarvesterStateSearchingTargetTag : public FMassTag
 {
 	GENERATED_BODY()
 };
 
+// harvester StateTree state: Moving
 USTRUCT()
 struct FMassHarvesterStateMovingTag : public FMassTag
 {
 	GENERATED_BODY()
 };
 
+// harvester StateTree state: Interacting
 USTRUCT()
 struct FMassHarvesterStateInteractingTag : public FMassTag
 {
