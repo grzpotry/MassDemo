@@ -29,7 +29,7 @@ void UHarvesterTargetProcessor::ConfigureQueries()
 	EntityQuery.AddRequirement<FHarvesterFragment>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.AddConstSharedRequirement<FHarvesterConfigSharedFragment>(EMassFragmentPresence::All);
 	
-	EntityQuery.AddTagRequirement<FMassAgentHarvesterTag>(EMassFragmentPresence::All);
+	EntityQuery.AddTagRequirement<FMassEntityHarvesterTag>(EMassFragmentPresence::All);
 	EntityQuery.AddTagRequirement<FMassHarvesterStateSearchingTargetTag>(EMassFragmentPresence::All);
 	
 	EntityQuery.RegisterWithProcessor(*this);
@@ -96,9 +96,9 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 					NearbyEntities.RemoveAt(i);
 				}
 
-				//TODO: Except filtering by tag, create separate grid containing only resources !
+				//TODO: Except filtering by tag, create separate grid containing specific entities (eg. resources)
 				FMassEntityView EntityView(EntityManager, NearbyEntities[i].Entity);
-				if (!EntityView.HasTag<FMassCollectableResourceTag>())
+				if (!EntityView.HasTag<FMassEntityCollectableResourceTag>())
 				{
 					NearbyEntities.RemoveAt(i);
 				}

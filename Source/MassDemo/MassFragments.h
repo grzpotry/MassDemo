@@ -16,8 +16,6 @@ public:
 	FVector Target;
 };
 
-//eg Tree: 50 wood
-//eg Rock: 20 stone
 USTRUCT()
 struct FCollectableResourceFragment : public FMassFragment
 {
@@ -33,6 +31,30 @@ public:
 	float CurrentAmount = 5;
 };
 
+USTRUCT()
+struct FResourcesWarehouseFragment : public FMassFragment
+{
+	GENERATED_BODY()
+
+public:
+	
+	TSoftObjectPtr<UResourceTemplate> Template;
+	
+	FVector WorldPosition;
+
+	UPROPERTY(EditAnywhere, Category = "")
+	float CurrentAmount = 0;
+};
+
+USTRUCT()
+struct FTransferFragment : public FMassFragment
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(EditAnywhere)
+	float LastTransferTime;
+};
+
 
 USTRUCT()
 struct FHarvesterFragment : public FMassFragment
@@ -43,8 +65,8 @@ public:
 	UPROPERTY(EditAnywhere)
 	float CurrentResources; //for now, just single type of resource
 
-	UPROPERTY(EditAnywhere)
-	float LastMiningTime;
+	// UPROPERTY(EditAnywhere)
+	// float LastMiningTime;
 	
 	FVector MoveTargetPosition;
 	FMassEntityHandle MoveTargetEntityHandle;
@@ -62,7 +84,7 @@ public:
 	float ResourcesStorageCapacity = 20.0f;
 	
 	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = "0.0"))
-	float MiningSpeed = 1.0f;
+	float MiningResourceSpeed = 1.0f; //TODO: Rename to TransferSpeed
 	
 	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = "0.0"))
 	float MoveSpeed = 200.0f;
@@ -96,7 +118,7 @@ enum class EMassCustomTag : int8
 
 // Identifies harvester - agent collecting resources
 USTRUCT()
-struct FMassAgentHarvesterTag : public FMassTag
+struct FMassEntityHarvesterTag : public FMassTag
 {
 	GENERATED_BODY()
 };
@@ -104,7 +126,14 @@ struct FMassAgentHarvesterTag : public FMassTag
 
 // Identifies collectable resource mined by harvesters
 USTRUCT()
-struct FMassCollectableResourceTag : public FMassTag
+struct FMassEntityCollectableResourceTag : public FMassTag
+{
+	GENERATED_BODY()
+};
+
+// Identifies storage (magazine) where resources are collected by harvesters
+USTRUCT()
+struct FMassEntityResourcesWarehouseTag : public FMassTag
 {
 	GENERATED_BODY()
 };
@@ -130,7 +159,7 @@ struct FMassHarvesterStateInteractingTag : public FMassTag
 	GENERATED_BODY()
 };
 
-// harvester StateTree state: Interacting
+// harvester StateTree state: Mining
 USTRUCT()
 struct FMassHarvesterStateMiningResourceTag : public FMassTag
 {

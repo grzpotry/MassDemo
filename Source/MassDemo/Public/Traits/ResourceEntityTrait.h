@@ -5,13 +5,13 @@
 #include "CoreMinimal.h"
 #include "MassEntityTraitBase.h"
 #include "Data/ResourceTemplate.h"
-#include "ResourceAgentTrait.generated.h"
+#include "ResourceEntityTrait.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class MASSDEMO_API UResourceAgentTrait : public UMassEntityTraitBase
+class MASSDEMO_API UResourceEntityTrait : public UMassEntityTraitBase
 {
 	GENERATED_BODY()
 

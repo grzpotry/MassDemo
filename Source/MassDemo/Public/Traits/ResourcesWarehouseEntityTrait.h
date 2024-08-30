@@ -4,18 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "MassEntityTraitBase.h"
-#include "MassDemo/MassFragments.h"
-#include "HarvesterAgentTrait.generated.h"
+#include "ResourcesWarehouseEntityTrait.generated.h"
+
 /**
  * 
  */
 UCLASS()
-class MASSDEMO_API UHarvesterAgentTrait : public UMassEntityTraitBase
+class MASSDEMO_API UResourcesWarehouseEntityTrait : public UMassEntityTraitBase
 {
 	GENERATED_BODY()
 
 	virtual void BuildTemplate(FMassEntityTemplateBuildContext& BuildContext, const UWorld& World) const override;
-
-	UPROPERTY(Category="Config", EditAnywhere)
-	FHarvesterConfigSharedFragment HarvesterConfig;
 };
