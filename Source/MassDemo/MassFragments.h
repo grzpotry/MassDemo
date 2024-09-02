@@ -44,6 +44,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "")
 	float CurrentAmount = 0;
+
+	UPROPERTY(EditAnywhere, Category = "")
+	float MaxCapacity = 0;
 };
 
 USTRUCT()
@@ -83,7 +86,8 @@ struct FHarvesterConfigSharedFragment : public FMassSharedFragment
 	GENERATED_BODY()
 
 public:
-
+	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = "0.0"))
+	float ResourcesStorageCapacity = 20.0f;
 	
 	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = "0.0"))
 	float MiningResourceSpeed = 1.0f; //TODO: Rename to TransferSpeed
@@ -97,6 +101,14 @@ public:
 
 
 //tags
+
+// Describes method executed on custom Mass tag
+UENUM()
+enum class EMassHarvesterTargetType : int8
+{
+	Resource = 0,
+	Warehouse = 1,
+};
 
 // Describes method executed on custom Mass tag
 UENUM()
@@ -116,6 +128,8 @@ enum class EMassCustomTag : int8
 	HarvesterStateMoving = 4,
 	HarvesterStateInteracting = 5,
 	HarvesterStateMiningResource = 6,
+	HarvesterStateDeliverResource = 7,
+	HarvesterIsFull = 8,
 };
 
 // Identifies harvester - agent collecting resources
@@ -147,6 +161,13 @@ struct FMassHarvesterStateSearchingTargetTag : public FMassTag
 	GENERATED_BODY()
 };
 
+// can't mine anyymore
+USTRUCT()
+struct FMassHarvesterIsFullTag : public FMassTag
+{
+	GENERATED_BODY()
+};
+
 // harvester StateTree state: Moving
 USTRUCT()
 struct FMassHarvesterStateMovingTag : public FMassTag
@@ -160,6 +181,14 @@ struct FMassHarvesterStateInteractingTag : public FMassTag
 {
 	GENERATED_BODY()
 };
+
+// harvester StateTree state: Deliver Resource
+USTRUCT()
+struct FMassHarvesterStateDeliverResourceTag : public FMassTag
+{
+	GENERATED_BODY()
+};
+
 
 // harvester StateTree state: Mining
 USTRUCT()

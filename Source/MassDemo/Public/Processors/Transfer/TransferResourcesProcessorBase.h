@@ -76,9 +76,9 @@ public:
 
 	template<Derived<FMassFragment> TSourceFragment, Derived<FMassFragment> TTargetFragment, typename TTransferrableElement>
 	void ExecuteInternal(FMassEntityManager& EntityManager, FMassExecutionContext& Context,
-	                     std::function<TTransferrableElement(FMassExecutionContext&)> GetTransferValue,
+	                     std::function<TTransferrableElement(FMassExecutionContext&, TSourceFragment)> GetTransferValue,
 	                     std::function<FTransferEntityFloat(TSourceFragment, TTransferrableElement)> ClampTransferValue,
-	                     std::function<void(TSourceFragment&, TTransferrableElement)> ProcessSource,
+	                     std::function<void(TSourceFragment&, TTransferrableElement, FMassEntityHandle, FMassExecutionContext& Context)> ProcessSource,
 	                     std::function<void(TTargetFragment&, TTransferrableElement)> ProcessTarget);
 
 	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;

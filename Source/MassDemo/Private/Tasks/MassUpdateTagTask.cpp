@@ -98,6 +98,10 @@ bool FMassUpdateTagTask::ProcessEntityTag(const EMassCustomTag Tag, FMassExecuti
 			return ProcessEntityTag<FMassHarvesterStateSearchingTargetTag>(EntityHandle, MassExecutionContext, TagAction);
 		case EMassCustomTag::HarvesterStateMiningResource:
 			return ProcessEntityTag<FMassHarvesterStateMiningResourceTag>(EntityHandle, MassExecutionContext, TagAction);
+		case EMassCustomTag::HarvesterStateDeliverResource:
+        	return ProcessEntityTag<FMassHarvesterStateDeliverResourceTag>(EntityHandle, MassExecutionContext, TagAction);
+		case EMassCustomTag::HarvesterIsFull:
+			return ProcessEntityTag<FMassHarvesterIsFullTag>(EntityHandle, MassExecutionContext, TagAction);
 	default:
 			checkf(false, TEXT("Custom mass tag not supported"));
 			return false;

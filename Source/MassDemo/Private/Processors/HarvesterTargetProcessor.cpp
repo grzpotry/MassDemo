@@ -59,8 +59,9 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 			
 			const FTransformFragment& TransformFragment = TransformList[EntityIndex];
 			const FTransform& Transform = TransformFragment.GetTransform();
-			FVector& HarvesterMoveTargetPosition = HarvesterTargetList[EntityIndex].MoveTargetPosition;
-			FMassEntityHandle& HarvesterMoveTargetEntity = HarvesterTargetList[EntityIndex].MoveTargetEntityHandle;
+			FHarvesterFragment HarvesterFragment = HarvesterTargetList[EntityIndex];
+			FVector& HarvesterMoveTargetPosition = HarvesterFragment.MoveTargetPosition;
+			FMassEntityHandle& HarvesterMoveTargetEntity = HarvesterFragment.MoveTargetEntityHandle;
 
 			FVector EntityLocation = Transform.GetLocation();
 			FVector Distance = HarvesterMoveTargetPosition - EntityLocation;
@@ -68,7 +69,15 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 			//we already have some target, and haven't reach it yet
 			if (!HarvesterMoveTargetPosition.IsZero() && Distance.SizeSquared() > StopDistanceSqr)
 			{
+				UE_LOG(LogTemp, Log, TEXT("is moving"));
 				continue;
+			}
+			
+			EMassHarvesterTargetType DesiredTarget = EMassHarvesterTargetType::Resource;
+
+			if (HarvesterFragment.CurrentResources == HarvesterFragment.ResourcesStorageCapacity)
+			{
+				DesiredTarget = EMassHarvesterTargetType::Warehouse;
 			}
 		
 			//search new target for harvester (quite heavy) TODO: optimize
@@ -81,7 +90,7 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 
 			if (NearbyEntities.IsEmpty())
 			{
-				OnResourceSearchFailed(EntityLocation, Extent);
+				OnTargetSearchFailed(EntityLocation, Extent);
 				continue;
 			}
 
@@ -98,22 +107,43 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 
 				//TODO: Except filtering by tag, create separate grid containing specific entities (eg. resources)
 				FMassEntityView EntityView(EntityManager, NearbyEntities[i].Entity);
+
 				if (!EntityView.HasTag<FMassEntityCollectableResourceTag>())
 				{
 					NearbyEntities.RemoveAt(i);
 				}
+
+				// switch (DesiredTarget)
+				// {
+				// 	case EMassHarvesterTargetType::Resource:
+				// 		if (!EntityView.HasTag<FMassEntityCollectableResourceTag>())
+				// 		{
+				// 			NearbyEntities.RemoveAt(i);
+				// 		}
+				// 		break;
+				// 	case EMassHarvesterTargetType::Warehouse:
+				// 		if (!EntityView.HasTag<FMassEntityResourcesWarehouseTag>())
+				// 		{
+				// 			NearbyEntities.RemoveAt(i);
+				// 		}
+				// 		break;
+				// }
 			}
 
 			if (NearbyEntities.IsEmpty())
 			{
-				OnResourceSearchFailed(EntityLocation, Extent);
+				OnTargetSearchFailed(EntityLocation, Extent);
 				continue;
 			}
 
 			const FMassNavigationObstacleItem TargetEntity = NearbyEntities[0];
+			
 			const FMassEntityHandle TargetEntityHandle = TargetEntity.Entity;
 			FMassEntityView TargetEntityView(EntityManager, TargetEntityHandle);
+			auto msg = TargetEntity.Entity.DebugGetDescription();
 
+			UE_LOG(LogTemp, Log, TEXT("setup move target123: %s"), *msg);
+			
 			const FTransformFragment& TargetTransform = TargetEntityView.GetFragmentData<FTransformFragment>();
 			HarvesterMoveTargetPosition = TargetTransform.GetTransform().GetLocation();
 			HarvesterMoveTargetEntity = TargetEntityHandle;
@@ -134,7 +164,7 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 	}
 }
 
-void UHarvesterTargetProcessor::OnResourceSearchFailed(const FVector& QueryOrigin, const FVector& Extent) const
+void UHarvesterTargetProcessor::OnTargetSearchFailed(const FVector& QueryOrigin, const FVector& Extent) const
 {
 	DrawDebugBox(GetWorld(), QueryOrigin, Extent, FColor::Yellow, true, 10);
 	//UE_LOG(LogTemp, Log, TEXT("Can't find any resource1234"));

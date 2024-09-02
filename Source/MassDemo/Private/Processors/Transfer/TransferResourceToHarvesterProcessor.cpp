@@ -1,19 +1,19 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Processors/Transfer/HarvesterMineResourceProcessor.h"
+#include "Processors/Transfer/TransferResourceToHarvesterProcessor.h"
 #include "MassCommonFragments.h"
 #include "MassCommonTypes.h"
 #include "MassExecutionContext.h"
 
-UHarvesterMineResourceProcessor::UHarvesterMineResourceProcessor()
+UTransferResourceToHarvesterProcessor::UTransferResourceToHarvesterProcessor()
 {
 	bAutoRegisterWithProcessingPhases = true;
 	ExecutionFlags = (int32)EProcessorExecutionFlags::All;
 	ExecutionOrder.ExecuteInGroup = UE::Mass::ProcessorGroupNames::Tasks;
 }
 
-void UHarvesterMineResourceProcessor::ConfigureQueries()
+void UTransferResourceToHarvesterProcessor::ConfigureQueries()
 {
 	Super::ConfigureQueries();
 	
@@ -30,12 +30,12 @@ void UHarvesterMineResourceProcessor::ConfigureQueries()
 	TargetQuery.RegisterWithProcessor(*this);
 }
 
-void UHarvesterMineResourceProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
+void UTransferResourceToHarvesterProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
 	UE_LOG(LogTemp, Log, TEXT("UHarvesterMineResourceProcessor"));
 
 	ExecuteInternal<FHarvesterFragment, FCollectableResourceFragment, float>(EntityManager, Context,
-		/*GetTransferValue*/[](FMassExecutionContext& _Context) -> float
+		/*GetTransferValue*/[](const FMassExecutionContext& _Context, FHarvesterFragment SourceFragment) -> float
 		{
 			const FHarvesterConfigSharedFragment& HarvesterConfigSharedFragment = _Context.GetConstSharedFragment<FHarvesterConfigSharedFragment>();
 			return HarvesterConfigSharedFragment.MiningResourceSpeed;
@@ -56,9 +56,14 @@ void UHarvesterMineResourceProcessor::Execute(FMassEntityManager& EntityManager,
 			
 			return FTransferEntityFloat(TargetEntity, FMath::Min(Result, Capacity));
 		},
-		/*ProcessSource*/[](FHarvesterFragment& SourceFragment, float Value) -> void
+		/*ProcessSource*/[](FHarvesterFragment& SourceFragment, float Value, FMassEntityHandle SourceEntity, FMassExecutionContext& Context) -> void
 		{
 			SourceFragment.CurrentResources += Value;
+
+			if (SourceFragment.CurrentResources >= SourceFragment.ResourcesStorageCapacity)
+			{
+				Context.Defer().AddTag<FMassHarvesterIsFullTag>(SourceEntity);
+			}
 		},
 		/*ProcessTarget*/[](FCollectableResourceFragment& TargetFragment, float Value) -> void
 		{
@@ -66,7 +71,7 @@ void UHarvesterMineResourceProcessor::Execute(FMassEntityManager& EntityManager,
 		});
 }
 
-void UHarvesterMineResourceProcessor::StopTransfer(TArray<FMassEntityHandle>& EntitiesToSignal,
+void UTransferResourceToHarvesterProcessor::StopTransfer(TArray<FMassEntityHandle>& EntitiesToSignal,
 	FMassExecutionContext& Context, FMassEntityHandle EntityHandle)
 {
 	Context.Defer().RemoveTag<FMassHarvesterStateMiningResourceTag>(EntityHandle);

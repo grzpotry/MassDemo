@@ -4,17 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "TransferResourcesProcessorBase.h"
-#include "HarvesterMineResourceProcessor.generated.h"
+#include "TransferResourceToHarvesterProcessor.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class MASSDEMO_API UHarvesterMineResourceProcessor : public UTransferResourcesProcessorBase
+class MASSDEMO_API UTransferResourceToHarvesterProcessor : public UTransferResourcesProcessorBase
 {
 	GENERATED_BODY()
 
-	UHarvesterMineResourceProcessor();
+	UTransferResourceToHarvesterProcessor();
 
 public:
 	virtual void ConfigureQueries() override;

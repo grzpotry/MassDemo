@@ -29,5 +29,5 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Query, config, meta = (UIMin = 0.0, ClampMin = 0.0))
 	float QueryExtent = 0.f;
 
-	void OnResourceSearchFailed(const FVector& QueryOrigin, const FVector& Extent) const;
+	void OnTargetSearchFailed(const FVector& QueryOrigin, const FVector& Extent) const;
 };

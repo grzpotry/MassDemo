@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Processors/TransferResourcesProcessorBase.h"
+#include "Processors/Transfer/TransferResourcesProcessorBase.h"
 #include "MassCommonFragments.h"
 #include "MassEntityView.h"
 #include "MassExecutionContext.h"
@@ -11,10 +11,16 @@
 
 // explicitly instantiate template to avoid linker errors
 template void UTransferResourcesProcessorBase::ExecuteInternal<FHarvesterFragment, FCollectableResourceFragment, float>(FMassEntityManager&, FMassExecutionContext&,
-	std::function<float(FMassExecutionContext&)>,
+	std::function<float(FMassExecutionContext&, FHarvesterFragment)>,
 	std::function<FTransferEntityFloat(FHarvesterFragment, float)>,
-	std::function<void(FHarvesterFragment&, float)>,
+	std::function<void(FHarvesterFragment&, float, FMassEntityHandle, FMassExecutionContext&)>,
 	std::function<void(FCollectableResourceFragment&, float)>);
+
+template void UTransferResourcesProcessorBase::ExecuteInternal<FHarvesterFragment, FResourcesWarehouseFragment, float>(FMassEntityManager&, FMassExecutionContext&,
+	std::function<float(FMassExecutionContext&, FHarvesterFragment)>,
+	std::function<FTransferEntityFloat(FHarvesterFragment, float)>,
+	std::function<void(FHarvesterFragment&, float, FMassEntityHandle, FMassExecutionContext&)>,
+	std::function<void(FResourcesWarehouseFragment&, float)>);
 
 UTransferResourcesProcessorBase::UTransferResourcesProcessorBase():
 	SourceQuery(*this),
@@ -36,9 +42,9 @@ void UTransferResourcesProcessorBase::Execute(FMassEntityManager& EntityManager,
 //TODO: verify lambdas performances, if noticeable - replace with eg. templated containers with entity mutate logic
 template<Derived<FMassFragment> TSourceFragment, Derived<FMassFragment> TTargetFragment, typename TTransferrableElement>
 void UTransferResourcesProcessorBase::ExecuteInternal(FMassEntityManager& EntityManager, FMassExecutionContext& Context,
-	std::function<TTransferrableElement(FMassExecutionContext&)> GetTransferValue,
+	std::function<TTransferrableElement(FMassExecutionContext&, TSourceFragment)> GetTransferValue,
 	std::function<FTransferEntityFloat(TSourceFragment, TTransferrableElement)> ClampTransferValue,
-	std::function<void(TSourceFragment&, TTransferrableElement)> ProcessSource,
+	std::function<void(TSourceFragment&, TTransferrableElement, FMassEntityHandle, FMassExecutionContext&)> ProcessSource,
 	std::function<void(TTargetFragment&, TTransferrableElement)> ProcessTarget)
 {
 	UMassSignalSubsystem& SignalSubsystem = Context.GetMutableSubsystemChecked<UMassSignalSubsystem>();
@@ -47,7 +53,6 @@ void UTransferResourcesProcessorBase::ExecuteInternal(FMassEntityManager& Entity
 	
 	SourceQuery.ForEachEntityChunk(EntityManager, Context, [this, &TransferActions, &EntitiesToSignal, &ProcessSource, &ClampTransferValue, &GetTransferValue](FMassExecutionContext& _Context)
 	{
-		const float TransferSpeed = GetTransferValue(_Context);
 		const TArrayView<TSourceFragment> SourcesList = _Context.GetMutableFragmentView<TSourceFragment>();
 		const TArrayView<FTransferFragment> SourceTransfersList = _Context.GetMutableFragmentView<FTransferFragment>();
 		
@@ -59,6 +64,7 @@ void UTransferResourcesProcessorBase::ExecuteInternal(FMassEntityManager& Entity
 		for (int32 EntityIndex = 0; EntityIndex < NumEntities; ++EntityIndex)
 		{
 			TSourceFragment& SourceFragment = SourcesList[EntityIndex];
+			const float TransferSpeed = GetTransferValue(_Context, SourceFragment);
 			FTransferFragment& TransferFragment = SourceTransfersList[EntityIndex];
 			const FMassEntityHandle SourceEntity = _Context.GetEntity(EntityIndex);
 			EntitiesToSignal.Reserve(EntitiesToSignal.Num() + NumEntities);
@@ -75,11 +81,12 @@ void UTransferResourcesProcessorBase::ExecuteInternal(FMassEntityManager& Entity
 
 			if (!TransferValue.IsValid())
 			{
+				UE_LOG(LogTemp, Log, TEXT("invalid transfer, stop mining"));
 				StopTransfer(EntitiesToSignal, _Context, SourceEntity);
 				continue;
 			}
 
-			ProcessSource(SourcesList[EntityIndex], TransferValue.Value);
+			ProcessSource(SourcesList[EntityIndex], TransferValue.Value, SourceEntity, _Context);
 			TransferActions.Add(TransferValue.TargetEntity, TransferValue);
 			LastTransferTime = CurrentTime;
 		}

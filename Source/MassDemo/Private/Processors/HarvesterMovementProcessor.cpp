@@ -58,8 +58,13 @@ void UHarvesterMovementProcessor::Execute(FMassEntityManager& EntityManager, FMa
 			FVector CurrentLocation = Transform.GetLocation();
 			FVector TargetVector = MoveTargetPosition - CurrentLocation;
 
+			const bool bIsEntityValid = MoveTargetEntity.IsValid();
+			const float Distance = TargetVector.Size();
+			const bool bIsTargetReached = TargetVector.SizeSquared() < StopDistanceSqr;
+			const bool bHasTarget = !MoveTargetPosition.IsZero();
+			
 			// TODO: handle case in stateTree when entity is removed while harvester is reaching it, validate entity through EntityManager ?
-			if ((!MoveTargetPosition.IsZero() && TargetVector.SizeSquared() > StopDistanceSqr) && MoveTargetEntity.IsValid())
+			if (bHasTarget && !bIsTargetReached && bIsEntityValid)
 			{
 				Transform.SetLocation(CurrentLocation + TargetVector.GetSafeNormal() * MoveSpeed * WorldDeltaTime);
 			}
@@ -79,6 +84,8 @@ void UHarvesterMovementProcessor::Execute(FMassEntityManager& EntityManager, FMa
 						MoveTargetPosition = FVector::ZeroVector; 
 						
 						EntitiesToSignal.Add(Entity);
+
+						UE_LOG(LogTemp, Log, TEXT("target is reached isValid: %i distance %f, isReacheddd %i, hasTarget %i"), bIsEntityValid, Distance, bIsTargetReached, bHasTarget);
 					}
 					else
 					{
