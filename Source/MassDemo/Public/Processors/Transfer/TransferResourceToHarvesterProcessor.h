@@ -19,4 +19,5 @@ class MASSDEMO_API UHarvesterMineResourceProcessor : public UTransferResourcesPr
 public:
 	virtual void ConfigureQueries() override;
 	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;
+	virtual void StopTransfer(TArray<FMassEntityHandle>& EntitiesToSignal, FMassExecutionContext& Context, FMassEntityHandle EntityHandle) override;
 };
