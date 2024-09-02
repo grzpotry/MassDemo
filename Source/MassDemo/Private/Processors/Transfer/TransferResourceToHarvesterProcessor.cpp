@@ -32,8 +32,6 @@ void UTransferResourceToHarvesterProcessor::ConfigureQueries()
 
 void UTransferResourceToHarvesterProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
-	UE_LOG(LogTemp, Log, TEXT("UHarvesterMineResourceProcessor"));
-
 	ExecuteInternal<FHarvesterFragment, FCollectableResourceFragment, float>(EntityManager, Context,
 		/*GetTransferValue*/[](const FMassExecutionContext& _Context, FHarvesterFragment SourceFragment) -> float
 		{

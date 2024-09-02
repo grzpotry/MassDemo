@@ -52,14 +52,6 @@ struct FTransferEntityFloat
 	};
 };
 
-
-UENUM()
-enum class ETransferActionMode : int8
-{
-	FromSourceToTarget = 0,
-	FromTargetToSource = 1,
-};
-
 template<class T, class U>
 concept Derived = std::is_base_of<U, T>::value;
 

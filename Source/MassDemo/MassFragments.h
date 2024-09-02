@@ -46,7 +46,7 @@ public:
 	float CurrentAmount = 0;
 
 	UPROPERTY(EditAnywhere, Category = "")
-	float MaxCapacity = 0;
+	float MaxCapacity = 100;
 };
 
 USTRUCT()
@@ -69,7 +69,7 @@ public:
 	float CurrentResources; //for now, just single type of resource
 
 	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = "0.0"))
-	float ResourcesStorageCapacity = 20.0f;
+	float ResourcesStorageCapacity = 5.0f;
 
 	// UPROPERTY(EditAnywhere)
 	// float LastMiningTime;
@@ -86,9 +86,6 @@ struct FHarvesterConfigSharedFragment : public FMassSharedFragment
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = "0.0"))
-	float ResourcesStorageCapacity = 20.0f;
-	
 	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = "0.0"))
 	float MiningResourceSpeed = 1.0f; //TODO: Rename to TransferSpeed
 	

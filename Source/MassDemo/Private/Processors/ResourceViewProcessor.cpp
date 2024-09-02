@@ -22,6 +22,7 @@ void UResourceViewProcessor::ConfigureQueries()
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.AddRequirement<FCollectableResourceFragment>(EMassFragmentAccess::ReadWrite, EMassFragmentPresence::Any);
 	EntityQuery.AddRequirement<FHarvesterFragment>(EMassFragmentAccess::ReadWrite, EMassFragmentPresence::Any);
+	EntityQuery.AddRequirement<FResourcesWarehouseFragment>(EMassFragmentAccess::ReadWrite, EMassFragmentPresence::Any);
 	//
 	// EntityQuery.AddTagRequirement<FMassCollectableResourceTag>(EMassFragmentPresence::All);
 	
@@ -36,6 +37,7 @@ void UResourceViewProcessor::Execute(FMassEntityManager& EntityManager, FMassExe
 		const TConstArrayView<FTransformFragment> TransformList = _Context.GetFragmentView<FTransformFragment>();
 		const TConstArrayView<FCollectableResourceFragment> ResourceList = _Context.GetFragmentView<FCollectableResourceFragment>();
 		const TConstArrayView<FHarvesterFragment> HarvesterList = _Context.GetFragmentView<FHarvesterFragment>();
+		const TConstArrayView<FResourcesWarehouseFragment> WarehouseList = _Context.GetFragmentView<FResourcesWarehouseFragment>();
 		const UWorld* World = _Context.GetWorld();
 		const FVector Offset = FVector(0.0f,0.0f, 200.0f);
 
@@ -56,6 +58,12 @@ void UResourceViewProcessor::Execute(FMassEntityManager& EntityManager, FMassExe
 				const float ResourceAmount = HarvesterList[EntityIndex].CurrentResources;
 				DrawDebugString(World, EntityTransform.GetLocation() + Offset,
 								FString::Printf(TEXT("%.1f"), ResourceAmount), 0, FColor::Green, 0.1f);
+			}
+			else if (EntityView.HasTag<FMassEntityResourcesWarehouseTag>())
+			{
+				const float ResourceAmount = WarehouseList[EntityIndex].CurrentAmount;
+				DrawDebugString(World, EntityTransform.GetLocation() + Offset,
+								FString::Printf(TEXT("%.1f"), ResourceAmount), 0, FColor::Yellow, 0.1f);
 			}
 		}
 	});

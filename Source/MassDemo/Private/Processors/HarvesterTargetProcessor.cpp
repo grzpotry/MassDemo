@@ -59,9 +59,9 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 			
 			const FTransformFragment& TransformFragment = TransformList[EntityIndex];
 			const FTransform& Transform = TransformFragment.GetTransform();
-			FHarvesterFragment HarvesterFragment = HarvesterTargetList[EntityIndex];
-			FVector& HarvesterMoveTargetPosition = HarvesterFragment.MoveTargetPosition;
-			FMassEntityHandle& HarvesterMoveTargetEntity = HarvesterFragment.MoveTargetEntityHandle;
+			const FHarvesterFragment& HarvesterFragment = HarvesterTargetList[EntityIndex];
+			FVector& HarvesterMoveTargetPosition = HarvesterTargetList[EntityIndex].MoveTargetPosition;
+			FMassEntityHandle& HarvesterMoveTargetEntity = HarvesterTargetList[EntityIndex].MoveTargetEntityHandle;
 
 			FVector EntityLocation = Transform.GetLocation();
 			FVector Distance = HarvesterMoveTargetPosition - EntityLocation;
@@ -69,7 +69,7 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 			//we already have some target, and haven't reach it yet
 			if (!HarvesterMoveTargetPosition.IsZero() && Distance.SizeSquared() > StopDistanceSqr)
 			{
-				UE_LOG(LogTemp, Log, TEXT("is moving"));
+				UE_LOG(LogTemp, Log, TEXT("is moving1"));
 				continue;
 			}
 			
@@ -103,31 +103,27 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 				if (!EntityManager.IsEntityValid(NearbyEntities[i].Entity))
 				{
 					NearbyEntities.RemoveAt(i);
+					continue;
 				}
 
 				//TODO: Except filtering by tag, create separate grid containing specific entities (eg. resources)
 				FMassEntityView EntityView(EntityManager, NearbyEntities[i].Entity);
 
-				if (!EntityView.HasTag<FMassEntityCollectableResourceTag>())
+				switch (DesiredTarget)
 				{
-					NearbyEntities.RemoveAt(i);
+					case EMassHarvesterTargetType::Resource:
+						if (!EntityView.HasTag<FMassEntityCollectableResourceTag>())
+						{
+							NearbyEntities.RemoveAt(i);
+						}
+						break;
+					case EMassHarvesterTargetType::Warehouse:
+						if (!EntityView.HasTag<FMassEntityResourcesWarehouseTag>())
+						{
+							NearbyEntities.RemoveAt(i);
+						}
+						break;
 				}
-
-				// switch (DesiredTarget)
-				// {
-				// 	case EMassHarvesterTargetType::Resource:
-				// 		if (!EntityView.HasTag<FMassEntityCollectableResourceTag>())
-				// 		{
-				// 			NearbyEntities.RemoveAt(i);
-				// 		}
-				// 		break;
-				// 	case EMassHarvesterTargetType::Warehouse:
-				// 		if (!EntityView.HasTag<FMassEntityResourcesWarehouseTag>())
-				// 		{
-				// 			NearbyEntities.RemoveAt(i);
-				// 		}
-				// 		break;
-				// }
 			}
 
 			if (NearbyEntities.IsEmpty())
@@ -137,12 +133,11 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 			}
 
 			const FMassNavigationObstacleItem TargetEntity = NearbyEntities[0];
-			
 			const FMassEntityHandle TargetEntityHandle = TargetEntity.Entity;
 			FMassEntityView TargetEntityView(EntityManager, TargetEntityHandle);
 			auto msg = TargetEntity.Entity.DebugGetDescription();
 
-			UE_LOG(LogTemp, Log, TEXT("setup move target123: %s"), *msg);
+			UE_LOG(LogTemp, Log, TEXT("setup move target456: %s"), *msg);
 			
 			const FTransformFragment& TargetTransform = TargetEntityView.GetFragmentData<FTransformFragment>();
 			HarvesterMoveTargetPosition = TargetTransform.GetTransform().GetLocation();

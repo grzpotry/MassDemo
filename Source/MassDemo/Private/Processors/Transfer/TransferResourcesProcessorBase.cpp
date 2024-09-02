@@ -91,25 +91,27 @@ void UTransferResourcesProcessorBase::ExecuteInternal(FMassEntityManager& Entity
 			LastTransferTime = CurrentTime;
 		}
 	});
-	
-	
-	TargetQuery.ForEachEntityChunk(EntityManager, Context, [this, &TransferActions, &ProcessTarget](FMassExecutionContext& _Context)
+
+	if (!TransferActions.IsEmpty())
 	{
-		const int32 NumEntities = _Context.GetNumEntities();
-		const TArrayView<TTargetFragment> TargetsList = _Context.GetMutableFragmentView<TTargetFragment>();
-		
-		for (int32 EntityIndex = 0; EntityIndex < NumEntities; ++EntityIndex)
+		TargetQuery.ForEachEntityChunk(EntityManager, Context, [this, &TransferActions, &ProcessTarget](FMassExecutionContext& _Context)
 		{
-			FMassEntityHandle TargetEntity = _Context.GetEntity(EntityIndex);
-			
-			if (TransferActions.Contains(TargetEntity))
+			const int32 NumEntities = _Context.GetNumEntities();
+			const TArrayView<TTargetFragment> TargetsList = _Context.GetMutableFragmentView<TTargetFragment>();
+				
+			for (int32 EntityIndex = 0; EntityIndex < NumEntities; ++EntityIndex)
 			{
-				const auto TransferEntityFloat = TransferActions[TargetEntity];
-				float TransferValue = TransferEntityFloat.Value;
-				ProcessTarget(TargetsList[EntityIndex], TransferValue);
+				FMassEntityHandle TargetEntity = _Context.GetEntity(EntityIndex);
+					
+				if (TransferActions.Contains(TargetEntity))
+				{
+					const auto TransferEntityFloat = TransferActions[TargetEntity];
+					float TransferValue = TransferEntityFloat.Value;
+					ProcessTarget(TargetsList[EntityIndex], TransferValue);
+				}
 			}
-		}
-	});
+		});
+	}
 
 	TransferActions.Reset();
 	
