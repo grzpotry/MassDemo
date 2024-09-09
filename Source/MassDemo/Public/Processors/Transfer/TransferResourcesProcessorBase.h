@@ -35,9 +35,9 @@ struct FTransferEntityFloat
 
 	FTransferEntityFloat() = default;
 
-	bool IsValid()
+	bool IsValid(const FMassEntityManager& EntityManager)
 	{
-		return Value > 0 && TargetEntity.IsValid();
+		return Value > 0 && EntityManager.IsEntityValid(TargetEntity);
 	}
 
 	static FTransferEntityFloat Invalid()

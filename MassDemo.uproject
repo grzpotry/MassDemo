@@ -46,6 +46,10 @@
 		{
 			"Name": "StateTree",
 			"Enabled": true
+		},
+		{
+			"Name": "AnimToTexture",
+			"Enabled": true
 		}
 	]
 }

@@ -49,8 +49,15 @@ void UTransferResourceToHarvesterProcessor::Execute(FMassEntityManager& EntityMa
 
 			const float Capacity = SourceFragment.ResourcesStorageCapacity;
 			const FMassEntityView TargetEntityView(EntityManager, TargetEntity);
-			const FCollectableResourceFragment& TargetFragment = TargetEntityView.GetFragmentData<FCollectableResourceFragment>();
-			const float Result = FMath::Min(Value, TargetFragment.CurrentAmount);
+			const FCollectableResourceFragment* TargetFragmentPtr = TargetEntityView.GetFragmentDataPtr<FCollectableResourceFragment>();
+
+			if (TargetFragmentPtr == nullptr)
+			{
+				UE_LOG(LogTemp, Error, TEXT("Missing FCollectableResourceFragment fragment for entity: %s"), *TargetEntity.DebugGetDescription());
+				return FTransferEntityFloat::Invalid();
+			}
+			
+			const float Result = FMath::Min(Value, TargetFragmentPtr->CurrentAmount);
 			
 			return FTransferEntityFloat(TargetEntity, FMath::Min(Result, Capacity));
 		},

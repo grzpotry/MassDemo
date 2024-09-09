@@ -44,14 +44,21 @@ void UTransferResourceFromHarvesterToWarehouseProcessor::Execute(FMassEntityMana
 		{
 			const FMassEntityHandle TargetEntity = SourceFragment.MoveTargetEntityHandle;
 
-			if (!TargetEntity.IsValid())
+			if (!EntityManager.IsEntityValid(TargetEntity))
 			{
 				return FTransferEntityFloat::Invalid();
 			}
 			
 			const FMassEntityView TargetEntityView(EntityManager, TargetEntity);
-			const FResourcesWarehouseFragment& TargetFragment = TargetEntityView.GetFragmentData<FResourcesWarehouseFragment>();
-			const float Result = FMath::Min(Value, TargetFragment.MaxCapacity - TargetFragment.CurrentAmount);
+			const FResourcesWarehouseFragment* TargetFragment = TargetEntityView.GetFragmentDataPtr<FResourcesWarehouseFragment>();
+			
+			if (TargetFragment == nullptr)
+			{
+				//UE_LOG(LogTemp, Error, TEXT("Missing FResourcesWarehouseFragment fragment for entity: %s"), *TargetEntity.DebugGetDescription());
+				return FTransferEntityFloat::Invalid();
+			}
+			
+			const float Result = FMath::Min(Value, TargetFragment->MaxCapacity - TargetFragment->CurrentAmount);
 			
 			return FTransferEntityFloat(TargetEntity, FMath::Min(Result, SourceFragment.CurrentResources));
 		},

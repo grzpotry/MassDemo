@@ -51,7 +51,7 @@ void UTransferResourcesProcessorBase::ExecuteInternal(FMassEntityManager& Entity
 	TMap<FMassEntityHandle, FTransferEntityFloat> TransferActions;
 	TArray<FMassEntityHandle> EntitiesToSignal;
 	
-	SourceQuery.ForEachEntityChunk(EntityManager, Context, [this, &TransferActions, &EntitiesToSignal, &ProcessSource, &ClampTransferValue, &GetTransferValue](FMassExecutionContext& _Context)
+	SourceQuery.ForEachEntityChunk(EntityManager, Context, [this, &TransferActions, &EntitiesToSignal, &ProcessSource, &ClampTransferValue, &GetTransferValue, &EntityManager](FMassExecutionContext& _Context)
 	{
 		const TArrayView<TSourceFragment> SourcesList = _Context.GetMutableFragmentView<TSourceFragment>();
 		const TArrayView<FTransferFragment> SourceTransfersList = _Context.GetMutableFragmentView<FTransferFragment>();
@@ -79,7 +79,7 @@ void UTransferResourcesProcessorBase::ExecuteInternal(FMassEntityManager& Entity
 			
 			FTransferEntityFloat TransferValue = ClampTransferValue(SourceFragment, TransferSpeed);
 
-			if (!TransferValue.IsValid())
+			if (!TransferValue.IsValid(EntityManager))
 			{
 				UE_LOG(LogTemp, Log, TEXT("invalid transfer, stop mining"));
 				StopTransfer(EntitiesToSignal, _Context, SourceEntity);
