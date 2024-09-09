@@ -28,7 +28,7 @@ public:
 	FVector WorldPosition;
 
 	UPROPERTY(EditAnywhere, Category = "")
-	float CurrentAmount = 5;
+	float CurrentAmount = 20;
 };
 
 USTRUCT()
@@ -46,7 +46,7 @@ public:
 	float CurrentAmount = 0;
 
 	UPROPERTY(EditAnywhere, Category = "")
-	float MaxCapacity = 100;
+	float MaxCapacity = 500;
 };
 
 USTRUCT()
