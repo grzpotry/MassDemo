@@ -14,7 +14,7 @@ public class MassDemo : ModuleRules
 			"StateTreeModule", "MassSignals",
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "MassEntity", "MassCommon", "MassNavigation", "StructUtils" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "MassEntity", "MassCommon", "MassNavigation", "StructUtils", "MassGameplayDebug" });
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
