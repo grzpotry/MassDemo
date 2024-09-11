@@ -6,6 +6,7 @@
 #include "MassCommonFragments.h"
 #include "MassDebuggerSubsystem.h"
 #include "MassDebugVisualizationComponent.h"
+#include "MassEntityView.h"
 #include "MassExecutionContext.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "MassDemo/MassFragments.h"
@@ -39,7 +40,7 @@ void UMassMaterialAnimationProcessor::Execute(FMassEntityManager& EntityManager,
 {
 	UE_LOG(LogTemp, Log, TEXT("UMassMaterialAnimationProcessor.Execute"));
 	
-	EntityQuery.ForEachEntityChunk(EntityManager, Context, [this](FMassExecutionContext& Context)
+	EntityQuery.ForEachEntityChunk(EntityManager, Context, [this, &EntityManager](FMassExecutionContext& Context)
 	{
 		UMassDebuggerSubsystem& Debugger = Context.GetMutableSubsystemChecked<UMassDebuggerSubsystem>();
 		UMassDebugVisualizationComponent* Visualizer = Debugger.GetVisualizationComponent();
@@ -49,64 +50,35 @@ void UMassMaterialAnimationProcessor::Execute(FMassEntityManager& EntityManager,
 		if (VisualDataISMCs.Num() > 0)
 		{
 			const int32 NumEntities = Context.GetNumEntities();
-			const TConstArrayView<FTransformFragment> LocationList = Context.GetFragmentView<FTransformFragment>();
 			const TConstArrayView<FSimDebugVisFragment> DebugVisList = Context.GetFragmentView<FSimDebugVisFragment>();
 
-			for (int32 i = 0; i < NumEntities; ++i)
+			for (int32 EntityIndex = 0; EntityIndex < NumEntities; ++EntityIndex)
 			{
-				const FSimDebugVisFragment& VisualComp = DebugVisList[i];
+				const FSimDebugVisFragment& VisualComp = DebugVisList[EntityIndex];
 				UHierarchicalInstancedStaticMeshComponent* StaticMeshComponent = VisualDataISMCs[VisualComp.VisualType];
 
-				if (!StaticMeshComponent) continue; // Ensure the mesh component is valid
+				if (!StaticMeshComponent) continue;
 
-				// Get the material from the static mesh
+				bool bAllTrue = true;
+				int prevCustomDataFloats = StaticMeshComponent->NumCustomDataFloats;
+				StaticMeshComponent->SetNumCustomDataFloats(4); //expensive, call just once !
 
-				// // Assuming the material is applied at index 0 of the static mesh
-				// if (StaticMeshComponent->GetMaterial(0))
-				// {
-				// 	// Create a dynamic material instance for this mesh
-				// 	if (UMaterialInstanceDynamic* DynamicMaterialInstance = StaticMeshComponent->
-				// 		CreateAndSetMaterialInstanceDynamic(0))
-				// 	{
-				// 		// Change the scalar parameter called "RoughnessControl"
-				// 		DynamicMaterialInstance->SetScalarParameterValue(FName("StartFrame"), 23);
-				// 		DynamicMaterialInstance->SetScalarParameterValue(FName("EndFrame"), 58);
-				//
-				// 		UE_LOG(LogTemp, Log, TEXT("UMassMaterialAnimationProcessor.SetupAnimation"));
-				// 	}
-				// }
+				int32 NumInstances = StaticMeshComponent->GetNumInstances();
+				FMassEntityHandle Entity = Context.GetEntity(EntityIndex);
+				FMassEntityView EntityView(EntityManager, Entity);
 
-				// Access the Material Instance Constant (MIC) applied to the Static Mesh
-				UMaterialInstanceConstant* MaterialInstance = Cast<UMaterialInstanceConstant>(StaticMeshComponent->GetMaterial(0));
+				//hardcoded values - just to test solution
+				float StartFrame = EntityView.HasTag<FMassHarvesterStateMovingTag>() ? 0 : 23;
+				float EndFrame = EntityView.HasTag<FMassHarvesterStateMovingTag>() ? 22 : 58;
 
-				if (MaterialInstance)
-				{
-					// Modify the scalar parameter value on the Material Instance
-					FMaterialParameterInfo Param1(FName("StartFrame"));
-					FMaterialParameterInfo Param2(FName("EndFrame"));
-
-					MaterialInstance->SetScalarParameterValueEditorOnly(Param1, 23.0f);
-					MaterialInstance->SetScalarParameterValueEditorOnly(Param2, 58.0f);
-
-					// Optional: Update the Material Instance to apply the changes
-					MaterialInstance->PostEditChange();
-				}
-
-				// UMaterialInstance* MaterialInstance = Cast<UMaterialInstance>(StaticMeshComponent->GetMaterial(0));
-				// if (MaterialInstance)
-				// {
-				// 	TArray<FMaterialParameterInfo> ParameterInfo;
-				// 	TArray<FGuid> ParameterIDs;
-				//
-				// 	MaterialInstance->GetAllScalarParameterInfo(ParameterInfo, ParameterIDs);
-				//
-				// 	for (const FMaterialParameterInfo& Info : ParameterInfo)
-				// 	{
-				// 		UE_LOG(LogTemp, Warning, TEXT("Found Scalar Parameter: %s"), *Info.Name.ToString());
-				// 	}
-				// }
-
-				UE_LOG(LogTemp, Log, TEXT("UMassMaterialAnimationProcessor.SetupAnimation"));
+				const int32 MeshInstanceIndex = VisualComp.InstanceIndex;
+			
+				bAllTrue = bAllTrue && StaticMeshComponent->SetCustomDataValue(MeshInstanceIndex, 0, 0.0f); // timeOffset
+				bAllTrue = bAllTrue && StaticMeshComponent->SetCustomDataValue(MeshInstanceIndex, 1, 1.0f); // playRate
+				bAllTrue = bAllTrue && StaticMeshComponent->SetCustomDataValue(MeshInstanceIndex, 2, StartFrame); // startFrame
+				bAllTrue = bAllTrue && StaticMeshComponent->SetCustomDataValue(MeshInstanceIndex, 3, EndFrame); // endFrame
+				
+				UE_LOG(LogTemp, Log, TEXT("UMassMaterialAnimationProcessor.Execute allChangesSucceded: %i instances: %i dataFloats: %i"), bAllTrue, NumInstances, prevCustomDataFloats);
 			}
 		}
 		else
