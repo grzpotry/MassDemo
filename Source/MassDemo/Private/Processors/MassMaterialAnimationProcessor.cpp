@@ -38,6 +38,7 @@ void UMassMaterialAnimationProcessor::ConfigureQueries()
 
 void UMassMaterialAnimationProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
+#if WITH_EDITORONLY_DATA
 	UE_LOG(LogTemp, Log, TEXT("UMassMaterialAnimationProcessor.Execute"));
 	
 	EntityQuery.ForEachEntityChunk(EntityManager, Context, [this, &EntityManager](FMassExecutionContext& Context)
@@ -89,4 +90,5 @@ void UMassMaterialAnimationProcessor::Execute(FMassEntityManager& EntityManager,
 			       ));
 		}
 	});
+#endif
 }
