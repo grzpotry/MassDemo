@@ -8,6 +8,8 @@
 #include "MassDebugVisualizationComponent.h"
 #include "MassEntityView.h"
 #include "MassExecutionContext.h"
+#include "MassRepresentationFragments.h"
+#include "MassRepresentationSubsystem.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "MassDemo/MassFragments.h"
 #include "Materials/MaterialInstanceConstant.h"
@@ -15,22 +17,23 @@
 UMassMaterialAnimationProcessor::UMassMaterialAnimationProcessor()
 {
 	ExecutionOrder.ExecuteAfter.Add(UE::Mass::ProcessorGroupNames::SyncWorldToMass);
-	
+
 	ObservedType = FHarvesterFragment::StaticStruct();
 	Operation = EMassObservedOperation::Add;
 	ExecutionFlags = (int32)EProcessorExecutionFlags::All;
-	
+
 	bAutoRegisterWithProcessingPhases = true;
-	bRequiresGameThreadExecution = true; // due to UMassDebuggerSubsystem access
+	bRequiresGameThreadExecution = true; // todo: still necessary ?
 }
 
 void UMassMaterialAnimationProcessor::ConfigureQueries()
 {
-	EntityQuery.AddSubsystemRequirement<UMassDebuggerSubsystem>(EMassFragmentAccess::ReadWrite);
-	
+	EntityQuery.AddSharedRequirement<FMassRepresentationSubsystemSharedFragment>(EMassFragmentAccess::ReadWrite);
+
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.AddRequirement<FHarvesterFragment>(EMassFragmentAccess::ReadWrite);
-	EntityQuery.AddRequirement<FSimDebugVisFragment>(EMassFragmentAccess::ReadOnly);
+	EntityQuery.AddRequirement<FMassRepresentationFragment>(EMassFragmentAccess::ReadOnly);
+
 	EntityQuery.AddTagRequirement<FMassEntityHarvesterTag>(EMassFragmentPresence::All);
 
 	EntityQuery.RegisterWithProcessor(*this);
@@ -38,57 +41,48 @@ void UMassMaterialAnimationProcessor::ConfigureQueries()
 
 void UMassMaterialAnimationProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
-#if WITH_EDITORONLY_DATA
-	UE_LOG(LogTemp, Log, TEXT("UMassMaterialAnimationProcessor.Execute"));
-	
+	UE_LOG(LogTemp, Log, TEXT("UMassMaterialAnimationProcessor1.Execute"));
+
 	EntityQuery.ForEachEntityChunk(EntityManager, Context, [this, &EntityManager](FMassExecutionContext& Context)
 	{
-		UMassDebuggerSubsystem& Debugger = Context.GetMutableSubsystemChecked<UMassDebuggerSubsystem>();
-		UMassDebugVisualizationComponent* Visualizer = Debugger.GetVisualizationComponent();
-		check(Visualizer);
-		TArrayView<UHierarchicalInstancedStaticMeshComponent* const> VisualDataISMCs = Visualizer->GetVisualDataISMCs();
+		UMassRepresentationSubsystem* RepresentationSubsystem = Context.GetMutableSharedFragment<FMassRepresentationSubsystemSharedFragment>().RepresentationSubsystem;
+		check(RepresentationSubsystem);
+
+		const FMassInstancedStaticMeshInfoArrayView ISMInfosView = RepresentationSubsystem->GetMutableInstancedStaticMeshInfos();
 		
-		if (VisualDataISMCs.Num() > 0)
+		const int32 NumEntities = Context.GetNumEntities();
+
+		for (int32 EntityIndex = 0; EntityIndex < NumEntities; ++EntityIndex)
 		{
-			const int32 NumEntities = Context.GetNumEntities();
-			const TConstArrayView<FSimDebugVisFragment> DebugVisList = Context.GetFragmentView<FSimDebugVisFragment>();
-
-			for (int32 EntityIndex = 0; EntityIndex < NumEntities; ++EntityIndex)
-			{
-				const FSimDebugVisFragment& VisualComp = DebugVisList[EntityIndex];
-				UHierarchicalInstancedStaticMeshComponent* StaticMeshComponent = VisualDataISMCs[VisualComp.VisualType];
-
-				if (!StaticMeshComponent) continue;
-
-				bool bAllTrue = true;
-				int prevCustomDataFloats = StaticMeshComponent->NumCustomDataFloats;
-				StaticMeshComponent->SetNumCustomDataFloats(4); //expensive, call just once !
-
-				int32 NumInstances = StaticMeshComponent->GetNumInstances();
-				FMassEntityHandle Entity = Context.GetEntity(EntityIndex);
-				FMassEntityView EntityView(EntityManager, Entity);
-
-				//hardcoded values - just to test solution
-				float StartFrame = EntityView.HasTag<FMassHarvesterStateMovingTag>() ? 0 : 23;
-				float EndFrame = EntityView.HasTag<FMassHarvesterStateMovingTag>() ? 22 : 58;
-
-				const int32 MeshInstanceIndex = VisualComp.InstanceIndex;
+			const FMassEntityHandle Entity = Context.GetEntity(EntityIndex);
+			FMassEntityView EntityView(EntityManager, Entity);
 			
-				bAllTrue = bAllTrue && StaticMeshComponent->SetCustomDataValue(MeshInstanceIndex, 0, 0.0f); // timeOffset
-				bAllTrue = bAllTrue && StaticMeshComponent->SetCustomDataValue(MeshInstanceIndex, 1, 1.0f); // playRate
-				bAllTrue = bAllTrue && StaticMeshComponent->SetCustomDataValue(MeshInstanceIndex, 2, StartFrame); // startFrame
-				bAllTrue = bAllTrue && StaticMeshComponent->SetCustomDataValue(MeshInstanceIndex, 3, EndFrame); // endFrame
-				
-				UE_LOG(LogTemp, Log, TEXT("UMassMaterialAnimationProcessor.Execute allChangesSucceded: %i instances: %i dataFloats: %i"), bAllTrue, NumInstances, prevCustomDataFloats);
+			FMassRepresentationFragment& Representation = EntityView.GetFragmentData<FMassRepresentationFragment>();
+			const int32 StaticMeshViewIndex = Representation.StaticMeshDescHandle.ToIndex();
+
+			if (!ISMInfosView.IsValidIndex(StaticMeshViewIndex))
+			{
+				continue;
 			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Log,
-			       TEXT(
-				       "UDebugVisLocationProcessor: Trying to update InstanceStaticMeshes while none created. Check your debug visualization setup"
-			       ));
+			
+			FMassInstancedStaticMeshInfo& ISMInfo = ISMInfosView[StaticMeshViewIndex];
+
+			if (!ISMInfo.IsValid())
+			{
+				UE_LOG(LogTemp, Error, TEXT("UMassMaterialAnimationProcessor.InvalidEntityMesh"));
+				continue;
+			}
+
+			//hardcoded values - just to test solution
+			const float StartFrame = EntityView.HasTag<FMassHarvesterStateMovingTag>() ? 0 : 23;
+			const float EndFrame = EntityView.HasTag<FMassHarvesterStateMovingTag>() ? 22 : 58;
+			constexpr float TimeOffset = 0.0f;
+			constexpr float PlayRate = 1.0f;
+
+			TArray CustomFloats = {TimeOffset, PlayRate, StartFrame, EndFrame};
+			ISMInfo.AddBatchedCustomDataFloats(CustomFloats, 0);
+
+			UE_LOG(LogTemp, Log, TEXT("UMassMaterialAnimationProcessor.Execute"));
 		}
 	});
-#endif
 }
