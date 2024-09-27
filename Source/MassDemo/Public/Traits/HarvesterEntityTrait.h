@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "MassEntityTraitBase.h"
+#include "MassMovementFragments.h"
 #include "MassDemo/MassFragments.h"
 #include "HarvesterEntityTrait.generated.h"
 /**
@@ -18,4 +19,7 @@ class MASSDEMO_API UHarvesterEntityTrait : public UMassEntityTraitBase
 
 	UPROPERTY(Category="Config", EditAnywhere)
 	FHarvesterConfigSharedFragment HarvesterConfig;
+
+	UPROPERTY(Category="Movement", EditAnywhere)
+	FMassMovementParameters Movement;
 };

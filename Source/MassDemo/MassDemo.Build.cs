@@ -14,7 +14,7 @@ public class MassDemo : ModuleRules
 			"StateTreeModule", "MassSignals",
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "MassEntity", "MassCommon", "MassNavigation", "StructUtils", "MassGameplayDebug", "MassRepresentation" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "MassEntity", "MassCommon", "MassNavigation", "StructUtils", "MassGameplayDebug", "MassRepresentation", "MassMovement" });
 		
 		PublicDefinitions.Add("WITH_MASSGAMEPLAY_DEBUG=1");
 

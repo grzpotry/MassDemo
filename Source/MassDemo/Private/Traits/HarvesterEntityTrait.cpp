@@ -15,4 +15,7 @@ void UHarvesterEntityTrait::BuildTemplate(FMassEntityTemplateBuildContext& Build
 
 	const FConstSharedStruct ConfigFragment = EntityManager.GetOrCreateConstSharedFragment(HarvesterConfig);
 	BuildContext.AddConstSharedFragment(ConfigFragment);
+
+	const FConstSharedStruct MovementFragment = EntityManager.GetOrCreateConstSharedFragment(Movement);
+	BuildContext.AddConstSharedFragment(MovementFragment);
 }
