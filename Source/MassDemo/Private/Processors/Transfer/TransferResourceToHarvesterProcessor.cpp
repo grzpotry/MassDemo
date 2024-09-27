@@ -32,13 +32,13 @@ void UTransferResourceToHarvesterProcessor::ConfigureQueries()
 
 void UTransferResourceToHarvesterProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
-	ExecuteInternal<FHarvesterFragment, FCollectableResourceFragment, float>(EntityManager, Context,
+	ExecuteInternal<FHarvesterFragment, FHarvesterConfigSharedFragment, FCollectableResourceFragment, float>(EntityManager, Context,
 		/*GetTransferValue*/[](const FMassExecutionContext& _Context, FHarvesterFragment SourceFragment) -> float
 		{
 			const FHarvesterConfigSharedFragment& HarvesterConfigSharedFragment = _Context.GetConstSharedFragment<FHarvesterConfigSharedFragment>();
 			return HarvesterConfigSharedFragment.MiningResourceSpeed;
 		},
-		/*ClampTransferValue*/[&EntityManager](const FHarvesterFragment& SourceFragment, float Value) -> FTransferEntityFloat
+		/*ClampTransferValue*/[&EntityManager](const FHarvesterFragment& SourceFragment, const FHarvesterConfigSharedFragment& SourceSharedFragment, float Value) -> FTransferEntityFloat
 		{
 			const FMassEntityHandle TargetEntity = SourceFragment.MoveTargetEntityHandle;
 
@@ -47,7 +47,7 @@ void UTransferResourceToHarvesterProcessor::Execute(FMassEntityManager& EntityMa
 				return FTransferEntityFloat::Invalid();
 			}
 
-			const float Capacity = SourceFragment.ResourcesStorageCapacity;
+			const float MaxTransferValue = SourceSharedFragment.ResourcesStorageCapacity - SourceFragment.CurrentResources;
 			const FMassEntityView TargetEntityView(EntityManager, TargetEntity);
 			const FCollectableResourceFragment* TargetFragmentPtr = TargetEntityView.GetFragmentDataPtr<FCollectableResourceFragment>();
 
@@ -59,13 +59,13 @@ void UTransferResourceToHarvesterProcessor::Execute(FMassEntityManager& EntityMa
 			
 			const float Result = FMath::Min(Value, TargetFragmentPtr->CurrentAmount);
 			
-			return FTransferEntityFloat(TargetEntity, FMath::Min(Result, Capacity));
+			return FTransferEntityFloat(TargetEntity, FMath::Min(Result, MaxTransferValue));
 		},
-		/*ProcessSource*/[](FHarvesterFragment& SourceFragment, float Value, FMassEntityHandle SourceEntity, FMassExecutionContext& Context) -> void
+		/*ProcessSource*/[](FHarvesterFragment& SourceFragment, const FHarvesterConfigSharedFragment& SourceSharedFragment, float Value, FMassEntityHandle SourceEntity, FMassExecutionContext& Context) -> void
 		{
 			SourceFragment.CurrentResources += Value;
 
-			if (SourceFragment.CurrentResources >= SourceFragment.ResourcesStorageCapacity)
+			if (SourceFragment.CurrentResources >= SourceSharedFragment.ResourcesStorageCapacity)
 			{
 				Context.Defer().AddTag<FMassHarvesterIsFullTag>(SourceEntity);
 			}

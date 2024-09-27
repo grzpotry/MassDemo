@@ -34,13 +34,13 @@ void UTransferResourceFromHarvesterToWarehouseProcessor::Execute(FMassEntityMana
 {
 	UE_LOG(LogTemp, Log, TEXT("UHarvesterDeliverResourceProcessor"));
 
-	ExecuteInternal<FHarvesterFragment, FResourcesWarehouseFragment, float>(EntityManager, Context,
+	ExecuteInternal<FHarvesterFragment, FHarvesterConfigSharedFragment, FResourcesWarehouseFragment, float>(EntityManager, Context,
 		/*GetTransferValue*/[](FMassExecutionContext&, const FHarvesterFragment& SourceFragment) -> float
 		{
 			UE_LOG(LogTemp, Log, TEXT("UHarvesterDeliverResourceProcessor transfer resourses %f"), SourceFragment.CurrentResources);
 			return SourceFragment.CurrentResources;
 		},
-		/*ClampTransferValue*/[&EntityManager](const FHarvesterFragment& SourceFragment, float Value) -> FTransferEntityFloat
+		/*ClampTransferValue*/[&EntityManager](const FHarvesterFragment& SourceFragment, const FHarvesterConfigSharedFragment& SourceSharedFragment, float Value) -> FTransferEntityFloat
 		{
 			const FMassEntityHandle TargetEntity = SourceFragment.MoveTargetEntityHandle;
 
@@ -62,11 +62,11 @@ void UTransferResourceFromHarvesterToWarehouseProcessor::Execute(FMassEntityMana
 			
 			return FTransferEntityFloat(TargetEntity, FMath::Min(Result, SourceFragment.CurrentResources));
 		},
-		/*ProcessSource*/[](FHarvesterFragment& SourceFragment, float Value, FMassEntityHandle SourceEntity, FMassExecutionContext& Context) -> void
+		/*ProcessSource*/[](FHarvesterFragment& SourceFragment, const FHarvesterConfigSharedFragment& SourceSharedFragment, float Value, FMassEntityHandle SourceEntity, FMassExecutionContext& Context) -> void
 		{
 			SourceFragment.CurrentResources -= Value;
 
-			if (SourceFragment.CurrentResources < SourceFragment.ResourcesStorageCapacity)
+			if (SourceFragment.CurrentResources < SourceSharedFragment.ResourcesStorageCapacity)
 			{
 				Context.Defer().RemoveTag<FMassHarvesterIsFullTag>(SourceEntity);
 			}

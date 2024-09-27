@@ -10,16 +10,16 @@
 #include "MassDemo/MassFragments.h"
 
 // explicitly instantiate template to avoid linker errors
-template void UTransferResourcesProcessorBase::ExecuteInternal<FHarvesterFragment, FCollectableResourceFragment, float>(FMassEntityManager&, FMassExecutionContext&,
+template void UTransferResourcesProcessorBase::ExecuteInternal<FHarvesterFragment, FHarvesterConfigSharedFragment, FCollectableResourceFragment, float>(FMassEntityManager&, FMassExecutionContext&,
 	std::function<float(FMassExecutionContext&, FHarvesterFragment)>,
-	std::function<FTransferEntityFloat(FHarvesterFragment, float)>,
-	std::function<void(FHarvesterFragment&, float, FMassEntityHandle, FMassExecutionContext&)>,
+	std::function<FTransferEntityFloat(FHarvesterFragment, FHarvesterConfigSharedFragment, float)>,
+	std::function<void(FHarvesterFragment&, const FHarvesterConfigSharedFragment&, float, FMassEntityHandle,FMassExecutionContext&)>,
 	std::function<void(FCollectableResourceFragment&, float)>);
 
-template void UTransferResourcesProcessorBase::ExecuteInternal<FHarvesterFragment, FResourcesWarehouseFragment, float>(FMassEntityManager&, FMassExecutionContext&,
+template void UTransferResourcesProcessorBase::ExecuteInternal<FHarvesterFragment, FHarvesterConfigSharedFragment, FResourcesWarehouseFragment, float>(FMassEntityManager&, FMassExecutionContext&,
 	std::function<float(FMassExecutionContext&, FHarvesterFragment)>,
-	std::function<FTransferEntityFloat(FHarvesterFragment, float)>,
-	std::function<void(FHarvesterFragment&, float, FMassEntityHandle, FMassExecutionContext&)>,
+	std::function<FTransferEntityFloat(FHarvesterFragment, FHarvesterConfigSharedFragment, float)>,
+	std::function<void(FHarvesterFragment&, const FHarvesterConfigSharedFragment&, float, FMassEntityHandle, FMassExecutionContext&)>,
 	std::function<void(FResourcesWarehouseFragment&, float)>);
 
 UTransferResourcesProcessorBase::UTransferResourcesProcessorBase():
@@ -40,12 +40,13 @@ void UTransferResourcesProcessorBase::Execute(FMassEntityManager& EntityManager,
 }
 
 //TODO: verify lambdas performances, if noticeable - replace with eg. templated containers with entity mutate logic
-template<Derived<FMassFragment> TSourceFragment, Derived<FMassFragment> TTargetFragment, typename TTransferrableElement>
+template <Derived<FMassFragment> TSourceFragment, Derived<FMassSharedFragment> TSourceSharedFragment, Derived<
+	FMassFragment> TTargetFragment, typename TTransferrableElement>
 void UTransferResourcesProcessorBase::ExecuteInternal(FMassEntityManager& EntityManager, FMassExecutionContext& Context,
-	std::function<TTransferrableElement(FMassExecutionContext&, TSourceFragment)> GetTransferValue,
-	std::function<FTransferEntityFloat(TSourceFragment, TTransferrableElement)> ClampTransferValue,
-	std::function<void(TSourceFragment&, TTransferrableElement, FMassEntityHandle, FMassExecutionContext&)> ProcessSource,
-	std::function<void(TTargetFragment&, TTransferrableElement)> ProcessTarget)
+    std::function<TTransferrableElement(FMassExecutionContext&, TSourceFragment)> GetTransferValue,
+    std::function<FTransferEntityFloat(TSourceFragment, TSourceSharedFragment, TTransferrableElement)> ClampTransferValue,
+    std::function<void(TSourceFragment&, const TSourceSharedFragment&, TTransferrableElement,FMassEntityHandle, FMassExecutionContext&)> ProcessSource,
+    std::function<void(TTargetFragment&, TTransferrableElement)> ProcessTarget)
 {
 	UMassSignalSubsystem& SignalSubsystem = Context.GetMutableSubsystemChecked<UMassSignalSubsystem>();
 	TMap<FMassEntityHandle, FTransferEntityFloat> TransferActions;
@@ -53,6 +54,7 @@ void UTransferResourcesProcessorBase::ExecuteInternal(FMassEntityManager& Entity
 	
 	SourceQuery.ForEachEntityChunk(EntityManager, Context, [this, &TransferActions, &EntitiesToSignal, &ProcessSource, &ClampTransferValue, &GetTransferValue, &EntityManager](FMassExecutionContext& _Context)
 	{
+		const TSourceSharedFragment& HarvesterConfigSharedFragment = _Context.GetConstSharedFragment<TSourceSharedFragment>();
 		const TArrayView<TSourceFragment> SourcesList = _Context.GetMutableFragmentView<TSourceFragment>();
 		const TArrayView<FTransferFragment> SourceTransfersList = _Context.GetMutableFragmentView<FTransferFragment>();
 		
@@ -77,7 +79,7 @@ void UTransferResourcesProcessorBase::ExecuteInternal(FMassEntityManager& Entity
 				continue;
 			}
 			
-			FTransferEntityFloat TransferValue = ClampTransferValue(SourceFragment, TransferSpeed);
+			FTransferEntityFloat TransferValue = ClampTransferValue(SourceFragment, HarvesterConfigSharedFragment, TransferSpeed);
 
 			if (!TransferValue.IsValid(EntityManager))
 			{
@@ -86,7 +88,7 @@ void UTransferResourcesProcessorBase::ExecuteInternal(FMassEntityManager& Entity
 				continue;
 			}
 
-			ProcessSource(SourcesList[EntityIndex], TransferValue.Value, SourceEntity, _Context);
+			ProcessSource(SourcesList[EntityIndex], HarvesterConfigSharedFragment, TransferValue.Value, SourceEntity, _Context);
 			TransferActions.Add(TransferValue.TargetEntity, TransferValue);
 			LastTransferTime = CurrentTime;
 		}

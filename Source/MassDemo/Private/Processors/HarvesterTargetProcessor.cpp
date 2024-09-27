@@ -75,7 +75,7 @@ void UHarvesterTargetProcessor::Execute(FMassEntityManager& EntityManager, FMass
 			
 			EMassHarvesterTargetType DesiredTarget = EMassHarvesterTargetType::Resource;
 
-			if (HarvesterFragment.CurrentResources == HarvesterFragment.ResourcesStorageCapacity)
+			if (HarvesterFragment.CurrentResources >= HarvesterConfigSharedFragment.ResourcesStorageCapacity)
 			{
 				DesiredTarget = EMassHarvesterTargetType::Warehouse;
 			}

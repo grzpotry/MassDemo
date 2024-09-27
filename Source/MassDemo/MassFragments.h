@@ -68,9 +68,6 @@ public:
 	UPROPERTY(EditAnywhere)
 	float CurrentResources; //for now, just single type of resource
 
-	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = "0.0"))
-	float ResourcesStorageCapacity = 5.0f;
-
 	// UPROPERTY(EditAnywhere)
 	// float LastMiningTime;
 	
@@ -91,6 +88,9 @@ public:
 	
 	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = "0.0"))
 	float MoveSpeed = 200.0f;
+	
+	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = "0.0"))
+	float ResourcesStorageCapacity = 200.0f;
 
 	UPROPERTY(EditAnywhere, Category = "General", meta = (ClampMin = "0.0"))
 	float TargetStopDistance = 10.0f;

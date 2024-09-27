@@ -66,11 +66,11 @@ public:
 	virtual void ConfigureQueries() override;
 	virtual void StopTransfer(TArray<FMassEntityHandle>& EntitiesToSignal, FMassExecutionContext& Context, FMassEntityHandle EntityHandle)PURE_VIRTUAL(UTransferResourcesProcessorBase::StopTransfer);
 
-	template<Derived<FMassFragment> TSourceFragment, Derived<FMassFragment> TTargetFragment, typename TTransferrableElement>
+	template <Derived<FMassFragment> TSourceFragment, Derived<FMassSharedFragment> TSourceSharedFragment, Derived<FMassFragment> TTargetFragment, typename TTransferrableElement>
 	void ExecuteInternal(FMassEntityManager& EntityManager, FMassExecutionContext& Context,
 	                     std::function<TTransferrableElement(FMassExecutionContext&, TSourceFragment)> GetTransferValue,
-	                     std::function<FTransferEntityFloat(TSourceFragment, TTransferrableElement)> ClampTransferValue,
-	                     std::function<void(TSourceFragment&, TTransferrableElement, FMassEntityHandle, FMassExecutionContext& Context)> ProcessSource,
+	                     std::function<FTransferEntityFloat(TSourceFragment,TSourceSharedFragment, TTransferrableElement)> ClampTransferValue,
+	                     std::function<void(TSourceFragment&, const TSourceSharedFragment&, TTransferrableElement,FMassEntityHandle, FMassExecutionContext&)> ProcessSource,
 	                     std::function<void(TTargetFragment&, TTransferrableElement)> ProcessTarget);
 
 	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;
